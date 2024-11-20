@@ -1,6 +1,11 @@
+from os import path
 from setuptools import setup, find_packages
 
-from biointergraph.__version__ import __version__
+
+__version__ = None
+version_path = path.join('biointergraph', '__version__.py')
+exec(open(version_path).read())
+assert __version__ is not None, f'Something is wrong with {version_path} file!'
 
 setup(
     name="bio-inter-graph",
