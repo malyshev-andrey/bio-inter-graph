@@ -13,7 +13,8 @@ setup(
     packages=find_packages(),
     install_requires=[
         'numpy>=1.21.0',
-        'pandas>=1.3.0'
+        'pandas>=1.3.0',
+        'tqdm>=4.42.0'
     ],
     python_requires=">=3.7",
     description="Graph Algorithms for Biological Interactomes",
