@@ -1,8 +1,10 @@
 from setuptools import setup, find_packages
 
+from biointergraph.__version__ import __version__
+
 setup(
     name="bio-inter-graph",
-    version="0.1.0",
+    version=__version__,
     packages=find_packages(),
     install_requires=[
         'numpy>=1.21.0',
