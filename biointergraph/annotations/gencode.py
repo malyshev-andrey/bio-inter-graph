@@ -36,7 +36,8 @@ def load_gencode_annotation(
         regions: str = 'CHR',
         content: str = 'comprehensive',
         format: str = 'gff3',
-        verbose: bool = False
+        verbose: bool = False,
+        chunksize: int|None = None
     ) -> pd.DataFrame:
 
     ASSEMBLIES = ('hg19', 'hg38', 'GRCh37', 'GRCh38')
@@ -86,7 +87,7 @@ def load_gencode_annotation(
         f'.annotation.{format}.gz'
     ])
 
-    table = read_feature_table(full_path)
+    table = read_feature_table(full_path, chunksize=chunksize)
     if verbose:
         print(f'GENCODE annotation URL:\n\t{full_path}')
         print(f'Feature table shape:\n\t{table.shape}')
