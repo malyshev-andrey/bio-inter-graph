@@ -1,5 +1,6 @@
-from ftplib import FTP
 import re
+from ftplib import FTP
+from warnings import warn
 
 import pandas as pd
 
@@ -67,15 +68,21 @@ def load_gencode_annotation(
 
     human_path = 'https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human'
 
-    if regions == 'all':
-        regions_suffix = '.chr_patch_hapl_scaff'
-    elif regions == 'pri':
-        regions_suffix = '.primary_assembly'
-    else:
-        assert regions in REGIONS
-        regions_suffix = ''
-
     is_hg19 = assembly in ('hg19', 'GRCh37')
+
+    if is_hg19 or (regions == 'chr'):
+        if regions != 'chr':
+            warn(
+                'Only CHR (reference chromosomes) regions '
+                'are available for hg19 in GENCODE:\n'
+                'using regions="CHR" value!'
+            )
+        regions_suffix = ''
+    elif regions == 'all':
+        regions_suffix = '.chr_patch_hapl_scaff'
+    else:
+        assert regions == 'pri'
+        regions_suffix = '.primary_assembly'
 
     full_path = ''.join([
         human_path,
