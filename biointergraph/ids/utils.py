@@ -18,3 +18,7 @@ def is_valid_id(id: pd.Series, id_type: str) -> pd.Series:
         )
 
     return id.str.match(id_type2regexp[id_type])
+
+
+def drop_id_version(id: pd.Series) -> pd.Series:
+    return id.str.split('.', expand=True)[0]
