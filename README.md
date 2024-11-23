@@ -21,7 +21,8 @@ print(biointergraph.__version__)
 
 ## Dependencies
 
-- [Python3](https://github.com/python/cpython) (>= 3.7)
+- [Python3](https://github.com/python/cpython) (>= 3.10)
 - [NumPy](https://github.com/numpy/numpy) (>= 1.21.0)
 - [Pandas](https://github.com/pandas-dev/pandas) (>= 1.3.0)
 - [tqdm](https://github.com/tqdm/tqdm) (>= 4.42.0)
+- [requests](https://github.com/psf/requests) (>= 2.20.0)

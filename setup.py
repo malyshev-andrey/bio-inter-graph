@@ -14,9 +14,10 @@ setup(
     install_requires=[
         'numpy>=1.21.0',
         'pandas>=1.3.0',
-        'tqdm>=4.42.0'
+        'tqdm>=4.42.0',
+        'requests>=2.20.0'
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.10",
     description="Graph Algorithms for Biological Interactomes",
     author="Andrey Malyshev",
     author_email="malyshew.a.d@yandex.ru",
