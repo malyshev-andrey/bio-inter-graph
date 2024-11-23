@@ -3,11 +3,7 @@ from warnings import warn
 import pandas as pd
 from tqdm.auto import tqdm
 
-GFF_COLUMNS = [
-    'chr', 'source', 'type',
-    'start', 'end', 'score',
-    'strand', 'phase', 'attributes'
-]
+from ..shared import GFF_COLUMNS
 
 
 def _validate_feature_table(ft: pd.DataFrame) -> pd.DataFrame:
@@ -62,5 +58,8 @@ def read_feature_table(
 
     if validation:
         result = _validate_feature_table(result)
+
+    result['start'] = result['start'].astype('int')
+    result['end'] = result['end'].astype('int')
 
     return result

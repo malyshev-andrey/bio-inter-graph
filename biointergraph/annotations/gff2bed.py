@@ -2,11 +2,7 @@ from typing import Callable
 
 import pandas as pd
 
-
-BED_COLUMNS = [
-    'chr', 'start', 'end',
-    'name', 'score', 'strand'
-]
+from ..shared import BED_COLUMNS
 
 
 def _gff2gene_id(ft: pd.DataFrame, *, format: str, source: str) -> pd.Series:
@@ -102,5 +98,8 @@ def gff2bed(ft: pd.DataFrame, *, names: pd.Series | Callable) -> pd.DataFrame:
         ft['name'] = names(ft)
     except TypeError:
         ft['name'] = names
+
+    ft['start'] = ft['start'].astype('int') - 1
+    ft['end'] = ft['end'].astype('int')
 
     return ft[BED_COLUMNS]
