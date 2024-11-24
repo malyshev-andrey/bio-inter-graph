@@ -147,4 +147,6 @@ def read_feature_table(
     result['start'] = result['start'].astype('int')
     result['end'] = result['end'].astype('int')
 
+    assert (result['start'] <= result['end']).all()
+
     return result
