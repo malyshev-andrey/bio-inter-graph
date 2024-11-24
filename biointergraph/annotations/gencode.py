@@ -55,7 +55,7 @@ def load_gencode_annotation(
         regions: str = 'CHR',
         content: str = 'comprehensive',
         format: str = 'gff3',
-        verbose: bool = False,
+        verbose: bool = True,
         **kwargs
     ) -> pd.DataFrame:
     """
@@ -148,9 +148,8 @@ def load_gencode_annotation(
         f'.annotation.{format}.gz'
     ])
 
+    if verbose: print(f'GENCODE annotation URL:\n\t{full_path}')
     table = read_feature_table(full_path, **kwargs)
-    if verbose:
-        print(f'GENCODE annotation URL:\n\t{full_path}')
-        print(f'Feature table shape:\n\t{table.shape}')
+    if verbose: print(f'Feature table shape:\n\t{table.shape}')
 
     return table

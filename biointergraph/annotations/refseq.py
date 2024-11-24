@@ -64,7 +64,7 @@ def _find_out_latest_refseq_release(
 def load_refseq_annotation(
         assembly: str = 'GRCh38', *,
         format: str = 'gff',
-        verbose: bool = False,
+        verbose: bool = True,
         domain='ftp.ncbi.nlm.nih.gov',
         path='genomes/refseq/vertebrate_mammalian/Homo_sapiens/all_assembly_versions',
         **kwargs
@@ -109,18 +109,14 @@ def load_refseq_annotation(
         'GRCh38': 'GRCh38',
         'T2T': 'T2T'
     }
-
     if assembly not in ASSEMBLIES:
         raise ValueError(f'"{assembly}" is not a valid argument. Valid arguments are: {", ".join(ASSEMBLIES)}')
 
     v = _find_out_latest_refseq_release(assembly=ASSEMBLIES[assembly], domain=domain, path=path)
-
     full_path = '/'.join([f'https://{domain}', path, f'{v}/{v}_genomic.{format}.gz'])
 
+    if verbose: print(f'RefSeq annotation URL:\n\t{full_path}')
     table = read_feature_table(full_path, **kwargs)
-
-    if verbose:
-        print(f'RefSeq annotation URL:\n\t{full_path}')
-        print(f'Feature table shape:\n\t{table.shape}')
+    if verbose: print(f'Feature table shape:\n\t{table.shape}')
 
     return table
