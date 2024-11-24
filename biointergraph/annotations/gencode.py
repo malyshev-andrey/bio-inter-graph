@@ -11,10 +11,28 @@ def _find_out_latest_gencode_release(
         domain: str = 'ftp.ebi.ac.uk',
         path: str = 'pub/databases/gencode/Gencode_human'
     ) -> str:
+    """
+    Determines the latest GENCODE release version available on the official FTP server.
+
+    Args:
+        domain (str): FTP server domain to connect to. Defaults to 'ftp.ebi.ac.uk'.
+        path (str): Path on the FTP server where GENCODE releases are stored.
+            Defaults to 'pub/databases/gencode/Gencode_human'.
+
+    Returns:
+        str: The latest GENCODE release version in the format "NN[a-z]" (e.g., "47", "47a").
+
+    Notes:
+        - If the FTP server connection fails, a default version "47" is returned.
+        - The function assumes release directories follow the naming pattern `release_NN[a-z]?`.
+        - An assertion error is raised if an unexpected naming pattern is encountered.
+    """
+
     try:
         ftp = FTP(domain)
     except ConnectionRefusedError:
         return '47'
+
     ftp.login()
     ftp.cwd(path)
     releases = []
@@ -40,6 +58,42 @@ def load_gencode_annotation(
         verbose: bool = False,
         **kwargs
     ) -> pd.DataFrame:
+    """
+    Loads GENCODE genome annotations for a specified assembly and release.
+
+    Args:
+        assembly (str): Genome assembly to use. Valid options are 'hg19', 'hg38',
+            'GRCh37', and 'GRCh38'. Defaults to 'hg38'.
+        release (str | int | None): GENCODE release version (e.g., '47' or '47a').
+            If None, the latest release is determined automatically. Defaults to None.
+        regions (str): Specifies the region of the genome to download. Valid options are:
+            - 'chr': Reference chromosomes only.
+            - 'all': Includes additional patches, haplotypes, and scaffolds.
+            - 'pri': Primary assembly only.
+            Defaults to 'CHR'.
+        content (str): Annotation content type. Valid options are:
+            - 'comprehensive': Includes all annotated features.
+            - 'basic': Limited to core transcripts.
+            Defaults to 'comprehensive'.
+        format (str): File format for the annotation. Valid options are 'gff3' and 'gtf'.
+            Defaults to 'gff3'.
+        verbose (bool): If True, prints the GENCODE URL and the feature table shape.
+            Defaults to False.
+        **kwargs: Additional keyword arguments passed to `read_feature_table`.
+
+    Returns:
+        pd.DataFrame: A feature table containing GENCODE annotation data.
+
+    Raises:
+        ValueError: If invalid arguments are provided for `assembly`, `release`,
+            `regions`, `content`, or `format`.
+
+    Notes:
+        - For 'hg19' or 'GRCh37', only CHR (reference chromosomes) regions are supported.
+        - The function constructs the GENCODE annotation URL dynamically based on
+            the inputs and downloads the data using the `read_feature_table` function.
+        - The full URL and feature table shape are printed if `verbose=True`.
+    """
 
     ASSEMBLIES = ('hg19', 'hg38', 'GRCh37', 'GRCh38')
     if assembly not in ASSEMBLIES:
