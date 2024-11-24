@@ -6,6 +6,7 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 from ..shared import GFF_COLUMNS
+from ..ids import drop_id_version
 
 
 def _validate_feature_table(ft: pd.DataFrame) -> pd.DataFrame:
@@ -150,3 +151,59 @@ def read_feature_table(
     assert (result['start'] <= result['end']).all()
 
     return result
+
+
+def unify_chr(chr: pd.Series, assembly: str = 'hg38') -> pd.Series:
+    """
+    Unify chromosome names using UCSC chromAlias table.
+
+    This function standardizes chromosome names in a pandas Series using
+    the UCSC `chromAlias` table for the specified genome assembly. It maps
+    identifiers to their canonical UCSC names and attempts to handle identifiers
+    without version suffixes. If no mapping is found, the original name is
+    retained in the output.
+
+    Args:
+        chr (pd.Series): A pandas Series containing chromosome names to be unified.
+        assembly (str): Genome assembly name. Supported assemblies include:
+            - "GRCh38" or "hg38" (default)
+            - "GRCh37" or "hg19"
+
+    Returns:
+        pd.Series: A pandas Series with unified chromosome names.
+
+    Raises:
+        ValueError: If an invalid assembly name is provided.
+
+    Notes:
+        - The function downloads the UCSC chromAlias table directly from
+            UCSC servers
+        - The function uses the `ids.drop_id_version` function to strip version
+            suffixes from chromosome identifiers for better mapping.
+    """
+
+    ASSEMBLIES = {
+        'GRCh38': 'hg38',
+        'hg38': 'hg38',
+        'GRCh37': 'hg19',
+        'hg19': 'hg19'
+    }
+    if assembly not in ASSEMBLIES:
+        raise ValueError(
+            f'"{assembly}" is not a valid argument. '
+            f'Valid arguments are: {", ".join(ASSEMBLIES)}'
+        )
+    assembly = ASSEMBLIES[assembly]
+
+    mapping = pd.read_csv(
+        f'https://hgdownload.soe.ucsc.edu/goldenPath/{assembly}/database/chromAlias.txt.gz',
+        sep='\t',
+        header=None,
+        dtype='str',
+        names=['key', 'value', 'source']
+    )
+    mapping = mapping.set_index('key', verify_integrity=True)['value']
+
+    drop_version_map = drop_id_version(chr).map(mapping)
+
+    return chr.map(mapping).combine_first(drop_version_map).combine_first(chr)
