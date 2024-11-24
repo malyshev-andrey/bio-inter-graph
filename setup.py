@@ -15,7 +15,8 @@ setup(
         'numpy>=1.21.0',
         'pandas>=1.3.0',
         'tqdm>=4.42.0',
-        'requests>=2.20.0'
+        'requests>=2.20.0',
+        'PyRanges>=0.0.114'
     ],
     python_requires=">=3.10",
     description="Graph Algorithms for Biological Interactomes",
