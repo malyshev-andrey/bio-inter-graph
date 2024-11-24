@@ -171,4 +171,6 @@ def gff2bed(
     ft['start'] = ft['start'].astype('int') - 1
     ft['end'] = ft['end'].astype('int')
 
+    assert (ft['start'] < ft['end']).all()
+
     return ft[BED_COLUMNS]
