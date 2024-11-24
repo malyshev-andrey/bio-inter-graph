@@ -6,6 +6,29 @@ from ..shared import BED_COLUMNS
 
 
 def _gff2gene_id(ft: pd.DataFrame, *, format: str, source: str) -> pd.Series:
+    """
+    Extract gene IDs from the 'attributes' column of a feature table in GFF-like format.
+
+    Parameters:
+        ft (pd.DataFrame): Input feature table with columns matching `GFF_COLUMNS`.
+        format (str): Format of the input data ('gff3', 'gtf', or 'gff').
+        source (str): Data source ('refseq' or 'gencode').
+
+    Returns:
+        pd.Series: Extracted gene IDs as a Pandas Series.
+
+    Raises:
+        ValueError: If `format` or `source` is invalid or unsupported for the given source.
+        AssertionError: If the 'attributes' column contains multiple matches for gene IDs
+                        or if 'gene' rows have missing gene IDs.
+
+    Notes:
+        - The function uses regex patterns tailored to the specified `source` and `format`.
+        - Only GFF, GTF, and GFF3 formats are supported.
+        - Input feature table is expected to have 9 columns: ['chr', 'source', 'type', 'start',
+            'end', 'score', 'strand', 'phase', 'attributes'].
+    """
+
     FORMATS = ('gff3', 'gtf', 'gff')
     format = format.lower()
     if format not in FORMATS:
@@ -49,6 +72,29 @@ def _gff2gene_id(ft: pd.DataFrame, *, format: str, source: str) -> pd.Series:
 
 
 def _gff2transcript_id(ft: pd.DataFrame, *, format: str, source: str) -> pd.Series:
+    """
+    Extract transcript IDs from the 'attributes' column of a feature table in GFF-like format.
+
+    Parameters:
+        ft (pd.DataFrame): Input feature table with columns matching `GFF_COLUMNS`.
+        format (str): Format of the input data ('gff3', 'gtf', or 'gff').
+        source (str): Data source ('refseq' or 'gencode').
+
+    Returns:
+        pd.Series: Extracted transcript IDs as a Pandas Series.
+
+    Raises:
+        ValueError: If `format` or `source` is invalid or unsupported for the given source.
+        AssertionError: If the 'attributes' column contains multiple matches for transcript IDs
+                        or if 'transcript' rows have missing transcript IDs.
+
+    Notes:
+        - The function uses regex patterns tailored to the specified `source` and `format`.
+        - Only GFF, GTF, and GFF3 formats are supported.
+        - Input feature table is expected to have 9 columns: ['chr', 'source', 'type', 'start',
+            'end', 'score', 'strand', 'phase', 'attributes'].
+    """
+
     FORMATS = ('gff3', 'gtf', 'gff')
     format = format.lower()
     if format not in FORMATS:
@@ -91,13 +137,36 @@ def _gff2transcript_id(ft: pd.DataFrame, *, format: str, source: str) -> pd.Seri
     return result
 
 
-def gff2bed(ft: pd.DataFrame, *, names: pd.Series | Callable) -> pd.DataFrame:
+def gff2bed(
+        ft: pd.DataFrame, *,
+        names: pd.Series | Callable[[pd.DataFrame], pd.Series],
+        **kwargs
+    ) -> pd.DataFrame:
+    """
+    Convert a feature table in GFF-like format to a BED-like DataFrame.
+
+    Parameters:
+        ft (pd.DataFrame): Input feature table with columns matching `GFF_COLUMNS`.
+        names (pd.Series | Callable[[pd.DataFrame], pd.Series]): Specifies the 'name' column
+            in the BED output. If a callable is provided, it should accept the feature table
+            and additional keyword arguments, returning a Pandas Series of names.
+        **kwargs: Additional arguments passed to the callable function in `names`, if applicable.
+
+    Returns:
+        pd.DataFrame: BED-like DataFrame with columns matching `BED_COLUMNS`.
+
+    Notes:
+        - The resulting DataFrame has columns: ['chr', 'start', 'end', 'name', 'score', 'strand'].
+        - Coordinates are converted to zero-based, half-open intervals (BED format).
+        - The 'name' column is derived from the `names` parameter, which can be a Pandas Series
+            or a callable function that generates names dynamically.
+        - Input feature table is expected to have 9 columns: ['chr', 'source', 'type', 'start',
+            'end', 'score', 'strand', 'phase', 'attributes'].
+    """
+
     ft = ft.copy()
 
-    try:
-        ft['name'] = names(ft)
-    except TypeError:
-        ft['name'] = names
+    ft['name'] = names(ft, **kwargs) if callable(names) else names
 
     ft['start'] = ft['start'].astype('int') - 1
     ft['end'] = ft['end'].astype('int')
