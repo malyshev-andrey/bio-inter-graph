@@ -69,12 +69,18 @@ def load_extended_ricseqlib(**kwargs) -> pd.DataFrame:
     )
     assert not result['extended_gene_id2'].isna().any()
 
+    result[['gene_id1', 'gene_id2']] = result[['extended_gene_id1', 'extended_gene_id2']]
+
     return result
 
 
 def load_gencode44_ricseqlib(**kwargs) -> pd.DataFrame:
-    return _ricseq_loader('1zi23ngx_q32zzCV8EaRpCSSGaJKD5x4E', **kwargs)
+    result = _ricseq_loader('1zi23ngx_q32zzCV8EaRpCSSGaJKD5x4E', **kwargs)
+    result[['gene_id1', 'gene_id2']] = result['name'].str.split('__', regex=False, expand=True)
+    return result
 
 
 def load_ricpipe(**kwargs) -> pd.DataFrame:
-    return _ricseq_loader('1-2qEi-2EZGpQoLg1povQ0gfSFq33Sh71', **kwargs)
+    result = _ricseq_loader('1-2qEi-2EZGpQoLg1povQ0gfSFq33Sh71', **kwargs)
+    result[['gene_id1', 'gene_id2']] = result['name'].str.split('_', regex=False, expand=True)
+    return result
