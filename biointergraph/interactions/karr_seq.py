@@ -103,7 +103,7 @@ def _load_single_karr_seq(
     return result
 
 
-def load_karr_seq(
+def load_karr_seq_data(
         cell_line: str|None = None, *,
         chunksize: int|None = None,
         verbose: bool = True
@@ -135,4 +135,21 @@ def load_karr_seq(
     if verbose:
         print(f'Shape (total): {data.shape}')
 
+    return data
+
+
+def karr_seq_data2pairwise(data: pd.DataFrame) -> pd.DataFrame:
+    swap = ['seqid', 'pos', 'strand']
+    swap = {f'{c}1': f'{c}2' for c in swap} | {f'{c}2': f'{c}1' for c in swap}
+    data = pd.concat([
+        data,
+        data.rename(columns=swap)
+    ])
+    data = data[data['seqid1'] < data['seqid2']]
+    data = data.groupby(
+        ['seqid1', 'seqid2', 'repl', 'frac', 'cell_line'],
+        as_index=False
+    ).agg(
+        n=('readID', 'size')
+    )
     return data

@@ -86,7 +86,7 @@ def _load_ricpipe(**kwargs) -> pd.DataFrame:
     return result
 
 
-def load_ricseq_data(**kwargs) -> pd.DataFrame:
+def load_ric_seq_data(**kwargs) -> pd.DataFrame:
     columns = ['gene_id1', 'gene_id2', 'p_adj']
 
     extended_ricseqlib = _load_extended_ricseqlib(**kwargs)[columns]
