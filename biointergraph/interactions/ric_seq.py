@@ -32,7 +32,7 @@ def _ricseq_loader(
     return result
 
 
-def load_extended_ricseqlib(**kwargs) -> pd.DataFrame:
+def _load_extended_ricseqlib(**kwargs) -> pd.DataFrame:
     result = _ricseq_loader('1Ie-3g1DQozFyNXvZLwGl4LbKvoBDkm7v', **kwargs)
 
     result['name'] = result['name'].str.replace('__', ' ')
@@ -74,28 +74,30 @@ def load_extended_ricseqlib(**kwargs) -> pd.DataFrame:
     return result
 
 
-def load_gencode44_ricseqlib(**kwargs) -> pd.DataFrame:
+def _load_gencode44_ricseqlib(**kwargs) -> pd.DataFrame:
     result = _ricseq_loader('1zi23ngx_q32zzCV8EaRpCSSGaJKD5x4E', **kwargs)
     result[['gene_id1', 'gene_id2']] = result['name'].str.split('__', regex=False, expand=True)
     return result
 
 
-def load_ricpipe(**kwargs) -> pd.DataFrame:
+def _load_ricpipe(**kwargs) -> pd.DataFrame:
     result = _ricseq_loader('1-2qEi-2EZGpQoLg1povQ0gfSFq33Sh71', **kwargs)
     result[['gene_id1', 'gene_id2']] = result['name'].str.split('_', regex=False, expand=True)
     return result
 
 
 def load_ricseq_data(**kwargs) -> pd.DataFrame:
-    extended_ricseqlib = load_extended_ricseqlib(**kwargs)[['gene_id1', 'gene_id2']]
+    columns = ['gene_id1', 'gene_id2', 'p_adj']
+
+    extended_ricseqlib = _load_extended_ricseqlib(**kwargs)[columns]
     extended_ricseqlib['pipeline'] = 'RICseqlib'
     extended_ricseqlib['annotation'] = 'extended'
 
-    gencode44_ricseqlib = load_gencode44_ricseqlib(**kwargs)[['gene_id1', 'gene_id2']]
+    gencode44_ricseqlib = _load_gencode44_ricseqlib(**kwargs)[columns]
     gencode44_ricseqlib['pipeline'] = 'RICseqlib'
     gencode44_ricseqlib['annotation'] = 'gencode44'
 
-    ricpipe = load_ricpipe(**kwargs)[['gene_id1', 'gene_id2']]
+    ricpipe = _load_ricpipe(**kwargs)[columns]
     ricpipe['pipeline'] = 'RICpipe'
     ricpipe['annotation'] = 'gencode44'
 
