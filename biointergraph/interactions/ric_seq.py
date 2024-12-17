@@ -4,11 +4,12 @@ from tqdm.auto import tqdm
 from ..annotations import load_extended_annotation
 
 
-def load_extended_ricseqlib(
+def _ricseq_loader(
+        id, *,
         chunksize: int|None = None,
-        pvalue: float = 0.2
+        pvalue: float|None = None
     ) -> pd.DataFrame:
-    url = 'https://drive.usercontent.google.com/download?id=1Ie-3g1DQozFyNXvZLwGl4LbKvoBDkm7v&export=download&confirm=t'
+    url = f'https://drive.usercontent.google.com/download?id={id}&export=download&confirm=t'
 
     default_kwargs = dict(
         sep='\t',
@@ -25,7 +26,14 @@ def load_extended_ricseqlib(
                 result.append(chunk)
         result = pd.concat(result)
 
-    result = result[result['p_adj'].astype('float') < pvalue].copy()
+    if pvalue is not None:
+        result = result[result['p_adj'].astype('float') < pvalue]
+
+    return result
+
+
+def load_extended_ricseqlib(**kwargs) -> pd.DataFrame:
+    result = _ricseq_loader('1Ie-3g1DQozFyNXvZLwGl4LbKvoBDkm7v', **kwargs)
 
     result['name'] = result['name'].str.replace('__', ' ')
     gene_id_regex = r'(?:[^ ]+| na)(?: (?:[AB]\.)?\d{1,3})?'
@@ -64,51 +72,9 @@ def load_extended_ricseqlib(
     return result
 
 
-def load_gencode44_ricseqlib(
-        chunksize: int|None = None,
-        pvalue: float = 0.2
-    ) -> pd.DataFrame:
-
-    url = 'https://drive.usercontent.google.com/download?id=1zi23ngx_q32zzCV8EaRpCSSGaJKD5x4E&export=download&confirm=t'
-
-    default_kwargs = dict(
-        sep='\t',
-        compression='gzip',
-        dtype='str'
-    )
-    if chunksize is None:
-        result = pd.read_csv(url, **default_kwargs)
-    else:
-        result = []
-        with tqdm(desc=url) as progress_bar:
-            for chunk in pd.read_csv(url, chunksize=chunksize, **default_kwargs):
-                progress_bar.update(chunk.shape[0])
-                result.append(chunk)
-        result = pd.concat(result)
-
-    return result
+def load_gencode44_ricseqlib(**kwargs) -> pd.DataFrame:
+    return _ricseq_loader('1zi23ngx_q32zzCV8EaRpCSSGaJKD5x4E', **kwargs)
 
 
-def load_ricpipe(
-        chunksize: int|None = None,
-        pvalue: float = 0.2
-    ) -> pd.DataFrame:
-
-    url = 'https://drive.usercontent.google.com/download?id=1-2qEi-2EZGpQoLg1povQ0gfSFq33Sh71&export=download&confirm=t'
-
-    default_kwargs = dict(
-        sep='\t',
-        compression='gzip',
-        dtype='str'
-    )
-    if chunksize is None:
-        result = pd.read_csv(url, **default_kwargs)
-    else:
-        result = []
-        with tqdm(desc=url) as progress_bar:
-            for chunk in pd.read_csv(url, chunksize=chunksize, **default_kwargs):
-                progress_bar.update(chunk.shape[0])
-                result.append(chunk)
-        result = pd.concat(result)
-
-    return result
+def load_ricpipe(**kwargs) -> pd.DataFrame:
+    return _ricseq_loader('1-2qEi-2EZGpQoLg1povQ0gfSFq33Sh71', **kwargs)
