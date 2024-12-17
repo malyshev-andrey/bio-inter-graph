@@ -84,3 +84,25 @@ def load_ricpipe(**kwargs) -> pd.DataFrame:
     result = _ricseq_loader('1-2qEi-2EZGpQoLg1povQ0gfSFq33Sh71', **kwargs)
     result[['gene_id1', 'gene_id2']] = result['name'].str.split('_', regex=False, expand=True)
     return result
+
+
+def load_ricseq_data(**kwargs) -> pd.DataFrame:
+    extended_ricseqlib = load_extended_ricseqlib(**kwargs)[['gene_id1', 'gene_id2']]
+    extended_ricseqlib['pipeline'] = 'RICseqlib'
+    extended_ricseqlib['annotation'] = 'extended'
+
+    gencode44_ricseqlib = load_gencode44_ricseqlib(**kwargs)[['gene_id1', 'gene_id2']]
+    gencode44_ricseqlib['pipeline'] = 'RICseqlib'
+    gencode44_ricseqlib['annotation'] = 'gencode44'
+
+    ricpipe = load_ricpipe(**kwargs)[['gene_id1', 'gene_id2']]
+    ricpipe['pipeline'] = 'RICpipe'
+    ricpipe['annotation'] = 'gencode44'
+
+    result = pd.concat([
+        extended_ricseqlib,
+        gencode44_ricseqlib,
+        ricpipe
+    ])
+
+    return result
