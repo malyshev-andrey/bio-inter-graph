@@ -1,14 +1,16 @@
 import pandas as pd
 
+from ..shared import BED_COLUMNS
 
-def load_extended_annotation(**kwargs) -> pd.DataFrame:
+
+def load_extended_annotation(convert2bed: bool = False, **kwargs) -> pd.DataFrame:
     url = 'https://drive.usercontent.google.com/download?id=1n2VDbdYe-0di0PVjOKxxk0hZgC914l4e&export=download&confirm=t'
 
     default_kwargs = dict(
         sep='\t',
         header=None,
         names=[
-            'seqid', 'start', 'end',
+            'chr' if convert2bed else 'seqid', 'start', 'end',
             'gene_name', 'gene_type', 'strand',
             'source', 'gene_id'
         ],
@@ -30,4 +32,12 @@ def load_extended_annotation(**kwargs) -> pd.DataFrame:
 
     assert (result['start'].astype('int') < result['end'].astype('int')).all()
 
-    return result
+    if not convert2bed:
+        return result
+
+    result['start'] = result['start'].astype('int')
+    result['end'] = result['end'].astype('int')
+    result['name'] = result['extended_gene_id']
+    result['score'] = '.'
+
+    return result[BED_COLUMNS]
