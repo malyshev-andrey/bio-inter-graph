@@ -4,15 +4,15 @@ from tqdm.auto import tqdm
 from ..annotations import load_extended_annotation
 
 
-def load_extended_ric_seq_data(
+def load_extended_ricseqlib(
         chunksize: int|None = None,
         pvalue: float = 0.2
     ) -> pd.DataFrame:
-    url = 'https://drive.usercontent.google.com/download?id=1mx0LHzmZ8Zfg-wQWJR1Ok1JztwOUZqZW&export=download&confirm=t'
+    url = 'https://drive.usercontent.google.com/download?id=1Ie-3g1DQozFyNXvZLwGl4LbKvoBDkm7v&export=download&confirm=t'
 
     default_kwargs = dict(
         sep='\t',
-        compression='zip',
+        compression='gzip',
         dtype='str'
     )
     if chunksize is None:
@@ -60,5 +60,55 @@ def load_extended_ric_seq_data(
         validate='many_to_one'
     )
     assert not result['extended_gene_id2'].isna().any()
+
+    return result
+
+
+def load_gencode44_ricseqlib(
+        chunksize: int|None = None,
+        pvalue: float = 0.2
+    ) -> pd.DataFrame:
+
+    url = 'https://drive.usercontent.google.com/download?id=1zi23ngx_q32zzCV8EaRpCSSGaJKD5x4E&export=download&confirm=t'
+
+    default_kwargs = dict(
+        sep='\t',
+        compression='gzip',
+        dtype='str'
+    )
+    if chunksize is None:
+        result = pd.read_csv(url, **default_kwargs)
+    else:
+        result = []
+        with tqdm(desc=url) as progress_bar:
+            for chunk in pd.read_csv(url, chunksize=chunksize, **default_kwargs):
+                progress_bar.update(chunk.shape[0])
+                result.append(chunk)
+        result = pd.concat(result)
+
+    return result
+
+
+def load_ricpipe(
+        chunksize: int|None = None,
+        pvalue: float = 0.2
+    ) -> pd.DataFrame:
+
+    url = 'https://drive.usercontent.google.com/download?id=1-2qEi-2EZGpQoLg1povQ0gfSFq33Sh71&export=download&confirm=t'
+
+    default_kwargs = dict(
+        sep='\t',
+        compression='gzip',
+        dtype='str'
+    )
+    if chunksize is None:
+        result = pd.read_csv(url, **default_kwargs)
+    else:
+        result = []
+        with tqdm(desc=url) as progress_bar:
+            for chunk in pd.read_csv(url, chunksize=chunksize, **default_kwargs):
+                progress_bar.update(chunk.shape[0])
+                result.append(chunk)
+        result = pd.concat(result)
 
     return result
