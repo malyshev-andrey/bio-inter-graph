@@ -4,7 +4,10 @@ from tqdm.auto import tqdm
 from ..annotations import load_extended_annotation
 
 
-def load_extended_ric_seq_data(chunksize: int|None = None) -> pd.DataFrame:
+def load_extended_ric_seq_data(
+        chunksize: int|None = None,
+        pvalue: float = 0.2
+    ) -> pd.DataFrame:
     url = 'https://drive.usercontent.google.com/download?id=1mx0LHzmZ8Zfg-wQWJR1Ok1JztwOUZqZW&export=download&confirm=t'
 
     default_kwargs = dict(
@@ -21,6 +24,8 @@ def load_extended_ric_seq_data(chunksize: int|None = None) -> pd.DataFrame:
                 progress_bar.update(chunk.shape[0])
                 result.append(chunk)
         result = pd.concat(result)
+
+    result = result[result['p_adj'].astype('float') < pvalue].copy()
 
     result['name'] = result['name'].str.replace('__', ' ')
     gene_id_regex = r'(?:[^ ]+| na)(?: (?:[AB]\.)?\d{1,3})?'
