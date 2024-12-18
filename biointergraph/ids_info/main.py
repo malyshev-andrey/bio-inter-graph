@@ -7,8 +7,6 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 from ..shared import GFF_COLUMNS
-from ..annotations import read_feature_table
-from ..annotations.gff2bed import _gff2gene_id
 
 
 def retrieve_gene_id4refseq_transcripts(ids: pd.Series, *, chunksize: int = 250, **kwargs) -> pd.Series:
