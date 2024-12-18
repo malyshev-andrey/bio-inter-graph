@@ -39,6 +39,7 @@ def load_OrgHsEgDb_pairwise(id1_type, id2_type):
                 result = pd.read_sql_query("SELECT * FROM genes", conn)
             elif id_type == 'refseq_transcript_id':
                 result = pd.read_sql_query("SELECT * FROM refseq", conn)
+                result = result[result['accession'].str[:2].isin({'NR', 'NM'})]
             elif id_type == 'ensembl_gene_id':
                 result = pd.concat([
                     pd.read_sql_query("SELECT * FROM ensembl", conn),
