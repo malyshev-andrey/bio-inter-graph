@@ -139,7 +139,7 @@ def _gff2transcript_id(ft: pd.DataFrame, *, format: str, source: str) -> pd.Seri
 
 def gff2bed(
         ft: pd.DataFrame, *,
-        names: pd.Series | Callable[[pd.DataFrame], pd.Series],
+        names: pd.Series | Callable[[pd.DataFrame], pd.Series] | str,
         **kwargs
     ) -> pd.DataFrame:
     """
@@ -166,6 +166,10 @@ def gff2bed(
 
     ft = ft.copy()
 
+    if names == 'gene_id':
+        names = _gff2gene_id
+    elif names == 'transcript_id':
+        names = _gff2transcript_id
     ft['name'] = names(ft, **kwargs) if callable(names) else names
 
     ft['start'] = ft['start'].astype('int') - 1
