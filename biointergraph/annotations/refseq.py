@@ -1,6 +1,7 @@
 from ftplib import FTP
 from typing import Callable
 
+from numpy import result_type
 import pandas as pd
 
 from .main import read_feature_table
@@ -194,6 +195,6 @@ def load_refseq_bed(assembly: str, feature: str) -> pd.DataFrame:
     result = pd.concat(result)
     result = result.drop_duplicates()
 
-    print(f'result: {bed.shape[0]}')
+    print(f'result: {result.shape[0]}')
 
     return result
