@@ -1,4 +1,4 @@
-from .main import read_feature_table
+from .main import read_feature_table, sanitize_bed
 from .gencode import load_gencode_annotation, load_gencode_bed
 from .refseq import load_refseq_annotation, load_refseq_bed
 from .extended import load_extended_annotation
@@ -8,7 +8,7 @@ from .intersect import bed_intersect
 
 
 __all__ = [
-    'read_feature_table',
+    'read_feature_table', 'sanitize_bed',
     'load_gencode_annotation', 'load_gencode_bed',
     'load_refseq_annotation', 'load_refseq_bed',
     'load_extended_annotation',

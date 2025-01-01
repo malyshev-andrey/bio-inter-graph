@@ -4,6 +4,8 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 from ..shared import BED_COLUMNS
+from ..annotations import load_refseq_bed, load_gencode_bed, sanitize_bed, bed_intersect
+from platformdirs import unix
 
 
 def load_encode_metadata(*, cell_line: str|None = None, assay: str, **kwargs) -> pd.DataFrame:
@@ -62,11 +64,23 @@ def load_encode_metadata(*, cell_line: str|None = None, assay: str, **kwargs) ->
     return metadata
 
 
-def load_encode_eCLIP(**kwargs) -> pd.DataFrame:
+def load_encode_eCLIP(assembly: str, **kwargs) -> pd.DataFrame:
+    ASSEMBLIES = {
+        'hg38': 'GRCh38', 'GRCh38': 'GRCh38',
+        'GRCh37': 'hg19', 'hg19': 'hg19',
+    }
+    if assembly not in ASSEMBLIES:
+        raise ValueError(
+            f'"{assembly}" is not a valid argument. '
+            f'Valid arguments are: {", ".join(ASSEMBLIES)}'
+        )
+    assembly = ASSEMBLIES[assembly]
+
     default_kwargs = dict(
         assay='eCLIP',
         processed='true',
-        file_format='bed'
+        file_format='bed',
+        assembly=assembly
     )
     default_kwargs.update(kwargs)
     metadata = load_encode_metadata(**default_kwargs)
@@ -76,13 +90,9 @@ def load_encode_eCLIP(**kwargs) -> pd.DataFrame:
     assert replicates.value_counts(normalize=True).eq(1/3).all()
     metadata = metadata[replicates.eq('1,2')]
 
-    result = {}
+    result = []
     with tqdm(desc='peaks') as progress_bar:
         for _, row in tqdm(metadata.iterrows(), total=metadata.shape[0]):
-            assembly = row['Genome assembly']
-            if assembly not in result:
-                result[assembly] = []
-
             bed = pd.read_csv(
                 f'https://www.encodeproject.org{row["Download URL"]}',
                 sep='\t', usecols=range(6),
@@ -92,20 +102,19 @@ def load_encode_eCLIP(**kwargs) -> pd.DataFrame:
             bed['name'] = row['Target label']
             bed['cell_line'] = row['Biosample name']
 
-            result[assembly].append(bed)
+            result.append(bed)
             progress_bar.update(bed.shape[0])
 
-    for assembly in result:
-        peaks = pd.concat(result[assembly])
-
-        assert peaks['start'].str.isdigit().all()
-        peaks['start'] = peaks['start'].astype('int')
-
-        assert peaks['end'].str.isdigit().all()
-        peaks['end'] = peaks['end'].astype('int')
-
-        assert peaks['strand'].isin({'+', '-'}).all()
-
-        result[assembly] = peaks
+    result = pd.concat(result)
+    result = sanitize_bed(result)
 
     return result
+
+
+def encode_eCLIP2pairwise(assembly: str, annotation: str) -> pd.DataFrame:
+    eCLIP_bed = load_encode_eCLIP(assembly=assembly)
+    annotation_bed = {
+        'gencode': load_gencode_bed,
+        'refseq': load_refseq_bed
+    }[annotation](assembly=assembly, feature='gene')
+    return bed_intersect(eCLIP_bed, annotation_bed, unify_chr_assembly=assembly)

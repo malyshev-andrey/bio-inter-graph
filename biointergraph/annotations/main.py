@@ -153,3 +153,14 @@ def read_feature_table(
     assert (result['start'] <= result['end']).all()
 
     return result
+
+
+def sanitize_bed(df: pd.DataFrame) -> pd.DataFrame:
+    assert df['start'].str.isdigit().all()
+    df['start'] = df['start'].astype('int')
+
+    assert df['end'].str.isdigit().all()
+    df['end'] = df['end'].astype('int')
+
+    assert df['strand'].isin({'+', '-'}).all()
+    return df
