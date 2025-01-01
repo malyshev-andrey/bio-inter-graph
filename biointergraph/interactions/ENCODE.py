@@ -1,6 +1,9 @@
 from urllib.parse import urlencode
 
 import pandas as pd
+from tqdm.auto import tqdm
+
+from ..shared import BED_COLUMNS
 
 
 def load_encode_metadata(*, cell_line: str|None = None, assay: str, **kwargs) -> pd.DataFrame:
@@ -66,27 +69,43 @@ def load_encode_eCLIP(**kwargs) -> pd.DataFrame:
         file_format='bed'
     )
     default_kwargs.update(kwargs)
-    metadata = _load_encode_metadata(**default_kwargs)
+    metadata = load_encode_metadata(**default_kwargs)
 
-    assert metadata['Biological replicates'].isin({'1', '2', '1,2'}).all()
-    assert metadata['Biological replicates'].value_counts(normalize=True).eq(1/3).all()
-    metadata = metadata[metadata['Biological replicates'].eq('1,2')]
+    replicates = metadata['Biological replicates']
+    assert replicates.isin({'1', '2', '1,2'}).all()
+    assert replicates.value_counts(normalize=True).eq(1/3).all()
+    metadata = metadata[replicates.eq('1,2')]
 
     result = {}
-    for _, row in tqdm(metadata.iterrows(), total=metadata.shape[0]):
-        assembly = row['Genome assembly']
-        if assembly not in result:
-            result[assembly] = []
+    with tqdm(desc='peaks') as progress_bar:
+        for _, row in tqdm(metadata.iterrows(), total=metadata.shape[0]):
+            assembly = row['Genome assembly']
+            if assembly not in result:
+                result[assembly] = []
 
-        url = f'https://www.encodeproject.org{row["Download URL"]}'
-        bed = pd.read_csv(
-            url, sep='\t', usecols=range(6), header=None,
-            names=['chr', 'start', 'end', 'name', 'score', 'strand']
-        )
-        bed['name'] = row['Target label']
-        bed['cell_line'] = row['Biosample name']
-        result[assembly].append(bed)
+            bed = pd.read_csv(
+                f'https://www.encodeproject.org{row["Download URL"]}',
+                sep='\t', usecols=range(6),
+                header=None, names=BED_COLUMNS,
+                dtype='str'
+            )
+            bed['name'] = row['Target label']
+            bed['cell_line'] = row['Biosample name']
+
+            result[assembly].append(bed)
+            progress_bar.update(bed.shape[0])
 
     for assembly in result:
-        result[assembly] = pd.concat(result[assembly])
+        peaks = pd.concat(result[assembly])
+
+        assert peaks['start'].str.isdigit().all()
+        peaks['start'] = peaks['start'].astype('int')
+
+        assert peaks['end'].str.isdigit().all()
+        peaks['end'] = peaks['end'].astype('int')
+
+        assert peaks['strand'].isin({'+', '-'}).all()
+
+        result[assembly] = peaks
+
     return result
