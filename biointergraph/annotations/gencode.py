@@ -50,7 +50,7 @@ def _latest_gencode_release():
     releases['version'] = releases['version'].astype('int')
     result = releases.sort_values(['version', 'revision']).iloc[-1]
 
-    return result['version'] + result['revision']
+    return result['version'].astype('str') + result['revision']
 
 
 def load_gencode_annotation(
