@@ -78,7 +78,7 @@ def load_gencode_annotation(
         format (str): File format for the annotation. Valid options are 'gff3' and 'gtf'.
             Defaults to 'gff3'.
         verbose (bool): If True, prints the GENCODE URL and the feature table shape.
-            Defaults to False.
+            Defaults to True.
         **kwargs: Additional keyword arguments passed to `read_feature_table`.
 
     Returns:

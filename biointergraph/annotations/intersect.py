@@ -1,6 +1,8 @@
 import pandas as pd
 import pyranges as pr
 
+from .main import unify_chr
+
 
 def _bed2ranges(bed: pd.DataFrame) -> pr.PyRanges:
     """
@@ -29,7 +31,12 @@ def _bed2ranges(bed: pd.DataFrame) -> pr.PyRanges:
     return pr.PyRanges(bed.rename(columns=names_map))
 
 
-def bed_intersect(bed1: pd.DataFrame, bed2: pd.DataFrame) -> pd.DataFrame:
+def bed_intersect(
+        bed1: pd.DataFrame,
+        bed2: pd.DataFrame, *,
+        unify: bool = False,
+        assembly: str = 'hg38'
+    ) -> pd.DataFrame:
     """
     Finds intersecting genomic intervals between two BED-like pandas DataFrames.
 
@@ -53,6 +60,10 @@ def bed_intersect(bed1: pd.DataFrame, bed2: pd.DataFrame) -> pd.DataFrame:
             - `start1`, `end1`, `name1`, `score1`, `strand1`: Columns from the first input DataFrame.
             - `start2`, `end2`, `name2`, `score2`, `strand2`: Columns from the second input DataFrame.
     """
+
+    if unify:
+        bed1['chr'] = unify_chr(bed1['chr'], assembly=assembly)
+        bed2['chr'] = unify_chr(bed2['chr'], assembly=assembly)
 
     result = _bed2ranges(bed1).join(
         _bed2ranges(bed2),

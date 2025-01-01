@@ -82,7 +82,7 @@ def load_refseq_annotation(
             - 'gff': General Feature Format (default).
             - 'gtf': Gene Transfer Format.
         verbose (bool): If True, prints the RefSeq URL and the feature table shape.
-            Defaults to False.
+            Defaults to True.
         domain (str): FTP server domain to connect to. Defaults to 'ftp.ncbi.nlm.nih.gov'.
         path (str): Path on the FTP server where RefSeq assemblies are stored.
             Defaults to 'genomes/refseq/vertebrate_mammalian/Homo_sapiens/all_assembly_versions'.
