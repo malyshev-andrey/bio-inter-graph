@@ -192,7 +192,7 @@ def load_refseq_bed(assembly: str, feature: str) -> pd.DataFrame:
         result.append(bed)
 
     result = pd.concat(result)
-    result = result.drop_dulicates()
+    result = result.drop_duplicates()
 
     print(f'result: {bed.shape[0]}')
 
