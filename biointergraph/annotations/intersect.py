@@ -1,7 +1,7 @@
 import pandas as pd
 import pyranges as pr
 
-from .main import unify_chr
+from .ucsc import unify_chr
 
 
 def _bed2ranges(bed: pd.DataFrame) -> pr.PyRanges:
@@ -34,8 +34,9 @@ def _bed2ranges(bed: pd.DataFrame) -> pr.PyRanges:
 def bed_intersect(
         bed1: pd.DataFrame,
         bed2: pd.DataFrame, *,
-        unify: bool = False,
-        assembly: str = 'hg38'
+        strandedness: str|None = 'same',
+        unify_chr_assembly: str|None = None,
+        **kwargs
     ) -> pd.DataFrame:
     """
     Finds intersecting genomic intervals between two BED-like pandas DataFrames.
@@ -61,16 +62,20 @@ def bed_intersect(
             - `start2`, `end2`, `name2`, `score2`, `strand2`: Columns from the second input DataFrame.
     """
 
-    if unify:
-        bed1['chr'] = unify_chr(bed1['chr'], assembly=assembly)
-        bed2['chr'] = unify_chr(bed2['chr'], assembly=assembly)
+    if unify_chr_assembly is not None:
+        bed1['chr'] = unify_chr(bed1['chr'], assembly=unify_chr_assembly)
+        bed2['chr'] = unify_chr(bed2['chr'], assembly=unify_chr_assembly)
 
-    result = _bed2ranges(bed1).join(
-        _bed2ranges(bed2),
-        strandedness='same',
-        report_overlap=True,
-        suffix='_b'
-    ).df
+    default_kwargs = {
+        'report_overlap': True,
+        'suffix': '_b'
+    }
+    if strandedness is not None:
+        default_kwargs['strandedness'] = strandedness
+    default_kwargs.update(kwargs)
+
+    result = _bed2ranges(bed1).join(_bed2ranges(bed2), **default_kwargs).df
+
 
     names_map = {
         'Chromosome': 'chr',
