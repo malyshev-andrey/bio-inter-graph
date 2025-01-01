@@ -185,7 +185,8 @@ def load_refseq_bed(assembly: str, feature: str) -> pd.DataFrame:
                 filter_func=lambda df: df[df['type'].eq(feature)]
             ),
             names=feature,
-            format=format
+            format=format,
+            source='refseq'
         )
         print(f'{format}: {bed.shape[0]}')
         result.append(bed)
