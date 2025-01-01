@@ -144,7 +144,10 @@ def read_feature_table(
     if validation:
         result = _validate_feature_table(result)
 
+    assert result['start'].str.isdigit().all()
     result['start'] = result['start'].astype('int')
+
+    assert result['end'].str.isdigit().all()
     result['end'] = result['end'].astype('int')
 
     assert (result['start'] <= result['end']).all()

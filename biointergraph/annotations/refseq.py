@@ -1,122 +1,166 @@
-import re
 from ftplib import FTP
+from typing import Callable
 
 import pandas as pd
 
 from .main import read_feature_table
 
 
-def _find_out_latest_refseq_release(
-        domain: str = 'ftp.ncbi.nlm.nih.gov',
-        path: str = 'genomes/refseq/vertebrate_mammalian/Homo_sapiens/all_assembly_versions',
-        assembly: str = 'GRCh38'
-    ) -> str:
+DOMAIN = 'ftp.ncbi.nlm.nih.gov'
+PATH = 'genomes/refseq/vertebrate_mammalian/Homo_sapiens/all_assembly_versions'
+
+def _latest_refseq_release(assembly: str) -> str:
     """
-    Determines the latest RefSeq release version available for a specified assembly.
+    Determines the latest RefSeq release version available for a specified genome assembly.
 
-    Args:
-        domain (str): FTP server domain to connect to. Defaults to 'ftp.ncbi.nlm.nih.gov'.
-        path (str): Path on the FTP server where RefSeq assemblies are stored.
-            Defaults to 'genomes/refseq/vertebrate_mammalian/Homo_sapiens/all_assembly_versions'.
-        assembly (str): Genome assembly to check for. Valid options are:
-            - 'GRCh37': Genome Reference Consortium Human Build 37.
-            - 'GRCh38': Genome Reference Consortium Human Build 38.
-            - 'T2T': Telomere-to-Telomere assembly CHM13vX.
-            Defaults to 'GRCh38'.
+    This function connects to the NCBI FTP server to list all available RefSeq assembly versions
+    for Homo sapiens. It filters and extracts the relevant version number for the specified assembly
+    (e.g., "GRCh38" or "T2T") and returns the identifier of the latest version.
 
-    Returns:
-        str: The latest RefSeq release directory name corresponding to the specified assembly.
+    Parameters
+    ----------
+    assembly : str
+        The name of the genome assembly for which to determine the latest RefSeq release version.
+        Valid values are extracted dynamically from available assemblies on the FTP server.
 
-    Raises:
-        AssertionError: If the `assembly` argument is not valid.
+    Returns
+    -------
+    str
+        The identifier of the latest RefSeq release version for the specified genome assembly.
 
-    Notes:
-        - The function identifies release versions using assembly-specific patterns.
-        - Release directories are sorted based on version numbers to select the latest one.
-        - The return value includes the directory name for the latest release.
+    Raises
+    ------
+    ValueError
+        If the specified assembly is not found among the available assemblies on the server.
+    AssertionError
+        If the server data does not match the expected format or contains inconsistencies.
+
+    Notes
+    -----
+    - The function expects the FTP directory structure and file naming conventions to match
+      those used by NCBI RefSeq.
+
+    Examples
+    --------
+    >>> _latest_refseq_release("GRCh38")
+    'GCF_000001405.40_GRCh38.p14'
     """
+    with FTP(DOMAIN) as ftp:
+        ftp.login()
+        ftp.cwd(PATH)
+        releases = ftp.nlst()
 
+    releases.remove('suppressed')
+    releases = pd.Series(releases, index=releases)
 
-    ftp = FTP(domain)
-    ftp.login()
-    ftp.cwd(path)
+    regex = r'^GCF_\d{9}\.(?P<version>\d+)_(?P<assembly>NCBI|GRCh37|GRCh38|T2T)'
+    assert releases.str.match(regex).all()
+    releases = releases.str.extract(regex)
 
-    search_pattern = {
-        'GRCh37': r'^GCF_000001405\.(\d+)_GRCh37(?:\.p(\d+))?$',
-        'GRCh38': r'^GCF_000001405\.(\d+)_GRCh38(?:\.p(\d+))?$',
-        'T2T': r'^GCF_009914755\.(\d+)_T2T-CHM13v(\d+)\.(\d+)$'
-    }
+    assemblies = releases['assembly'].unique()
+    if assembly not in assemblies:
+        raise ValueError(
+            f'"{assembly}" is not a valid argument. '
+            f'Valid arguments are: {", ".join(assemblies)}'
+        )
 
-    assert assembly in search_pattern
+    releases = releases.loc[releases['assembly'] == assembly, 'version']
+    assert releases.is_unique and releases.str.isdigit().all()
+    releases = releases.astype('int')
 
-    releases = []
+    result = releases.idxmax()
 
-    for name in ftp.nlst():
-        if assembly in name:
-            version = re.search(search_pattern[assembly], name).groups()
-            version = filter(lambda s: s is not None, version)
-            version = map(int, version)
-            releases.append((*version, name))
-
-    return sorted(releases)[-1][-1]
+    return result
 
 
 def load_refseq_annotation(
-        assembly: str = 'GRCh38', *,
-        format: str = 'gff',
+        assembly: str, *,
+        format: str,
         verbose: bool = True,
-        domain='ftp.ncbi.nlm.nih.gov',
-        path='genomes/refseq/vertebrate_mammalian/Homo_sapiens/all_assembly_versions',
+        chunksize: int | None = None,
+        filter_func: Callable[[pd.DataFrame], pd.DataFrame] = lambda df: df,
         **kwargs
     ) -> pd.DataFrame:
     """
-    Loads RefSeq genome annotations for a specified assembly.
+    Load RefSeq genome annotations for a specified genome assembly and format.
 
-    Args:
-        assembly (str): Genome assembly to use. Valid options are:
-            - 'hg38' or 'GRCh38': Genome Reference Consortium Human Build 38.
-            - 'hg19' or 'GRCh37': Genome Reference Consortium Human Build 37.
-            - 'T2T': Telomere-to-Telomere assembly CHM13vX.
-            Defaults to 'GRCh38'.
-        format (str): File format for the annotation. Valid options are:
-            - 'gff': General Feature Format (default).
-            - 'gtf': Gene Transfer Format.
-        verbose (bool): If True, prints the RefSeq URL and the feature table shape.
-            Defaults to True.
-        domain (str): FTP server domain to connect to. Defaults to 'ftp.ncbi.nlm.nih.gov'.
-        path (str): Path on the FTP server where RefSeq assemblies are stored.
-            Defaults to 'genomes/refseq/vertebrate_mammalian/Homo_sapiens/all_assembly_versions'.
-        **kwargs: Additional keyword arguments passed to `read_feature_table`.
+    Parameters
+    ----------
+    assembly : str
+        The genome assembly to load annotations for. Valid options are:
+        - 'hg38' or 'GRCh38' (GRCh38 assembly)
+        - 'hg19' or 'GRCh37' (GRCh37 assembly)
+        - 'T2T' (T2T assembly)
+    format : str
+        The format of the annotation file. Valid options are:
+        - 'gtf'
+        - 'gff'
+    verbose : bool, optional
+        If True, print progress messages and details about the loaded data. Defaults to True.
+    chunksize : int or None, optional
+        Number of rows to read in each chunk. If None, the entire file is loaded into memory. Defaults to None.
+    filter_func : Callable[[pd.DataFrame], pd.DataFrame], optional
+        A callable that filters or processes the loaded DataFrame. It takes a DataFrame as input
+        and returns a processed DataFrame. Defaults to an identity function (no filtering).
+    **kwargs : dict, optional
+        Additional arguments to pass to the internal data loading function (`read_feature_table`).
 
-    Returns:
-        pd.DataFrame: A feature table containing RefSeq annotation data.
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame containing the RefSeq genome annotation data.
 
-    Raises:
-        ValueError: If an invalid `assembly` argument is provided.
+    Raises
+    ------
+    ValueError
+        If an invalid `assembly` or `format` is specified.
 
-    Notes:
-        - The function determines the latest release version for the specified assembly
-            using `_find_out_latest_refseq_release`.
-        - The annotation data is fetched from the dynamically constructed URL based on
-            the selected assembly and format.
-        - If `verbose=True`, the constructed URL and feature table dimensions are printed.
+    Notes
+    -----
+    - This function uses the `_latest_refseq_release` function to determine the latest RefSeq release for the
+        specified assembly.
+    - The annotation data is downloaded as a compressed file from a predefined URL structure.
+    - The `read_feature_table` function is responsible for parsing the downloaded data.
+
+    Examples
+    --------
+    Load GRCh38 GTF annotation with verbose output:
+
+    >>> df = load_refseq_annotation(assembly='GRCh38', format='gtf', verbose=True)
+
+    Load hg19 GFF annotation, process chunks of 10000 rows, and filter genes:
+
+    >>> df = load_refseq_annotation(
+    ...     assembly='hg19',
+    ...     format='gff',
+    ...     chunksize=1e4,
+    ...     filter_func=lambda df: df[df['type'] == 'gene']
+    ... )
     """
-
     ASSEMBLIES = {
-        'hg38': 'GRCh38',
-        'hg19': 'GRCh37',
-        'GRCh37': 'GRCh37',
-        'GRCh38': 'GRCh38',
+        'hg38': 'GRCh38', 'GRCh38': 'GRCh38',
+        'hg19': 'GRCh37', 'GRCh37': 'GRCh37',
         'T2T': 'T2T'
     }
     if assembly not in ASSEMBLIES:
-        raise ValueError(f'"{assembly}" is not a valid argument. Valid arguments are: {", ".join(ASSEMBLIES)}')
+        raise ValueError(
+            f'"{assembly}" is not a valid argument. '
+            f'Valid arguments are: {", ".join(ASSEMBLIES)}'
+        )
 
-    v = _find_out_latest_refseq_release(assembly=ASSEMBLIES[assembly], domain=domain, path=path)
-    full_path = '/'.join([f'https://{domain}', path, f'{v}/{v}_genomic.{format}.gz'])
+    FORMATS = ('gtf', 'gff')
+    format = format.lower()
+    if format not in FORMATS:
+        raise ValueError(
+            f'"{format}" is not a valid argument. '
+            f'Valid arguments are: {", ".join(FORMATS)}'
+        )
+
+    release = _latest_refseq_release(ASSEMBLIES[assembly])
+    full_path = '/'.join([f'https://{DOMAIN}', PATH, f'{release}/{release}_genomic.{format}.gz'])
 
     if verbose: print(f'RefSeq annotation URL:\n\t{full_path}')
-    table = read_feature_table(full_path, **kwargs)
-    if verbose: print(f'Feature table shape:\n\t{table.shape}')
+    result = read_feature_table(full_path, chunksize=chunksize, filter_func=filter_func, **kwargs)
+    if verbose: print(f'Feature table shape:\n\t{result.shape}')
 
-    return table
+    return result
