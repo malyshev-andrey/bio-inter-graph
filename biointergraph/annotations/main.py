@@ -5,7 +5,7 @@ from typing import IO, Callable
 import pandas as pd
 from tqdm.auto import tqdm
 
-from ..shared import GFF_COLUMNS
+from ..shared import GFF_COLUMNS, CHUNKSIZE
 
 
 def _validate_feature_table(ft: pd.DataFrame) -> pd.DataFrame:
@@ -62,7 +62,7 @@ def _validate_feature_table(ft: pd.DataFrame) -> pd.DataFrame:
 def read_feature_table(
         filepath_or_buffer: str | Path | IO[str], *,
         filter_func: Callable[[pd.DataFrame], pd.DataFrame] = lambda df: df,
-        chunksize: int | None = None,
+        chunksize: int | None = CHUNKSIZE,
         validation: bool = True,
         **kwargs
     ) -> pd.DataFrame:
@@ -83,7 +83,7 @@ def read_feature_table(
         filter_func (Callable[[pd.DataFrame], pd.DataFrame], optional): A function to filter
             or transform the feature table after loading. Defaults to the identity function.
         chunksize (int | None, optional): The number of rows to read per chunk. If None,
-            the entire file is read at once. Defaults to None.
+            the entire file is read at once. Defaults to CHUNKSIZE.
         validation (bool, optional): Whether to validate the feature table after reading.
             Defaults to True.
         **kwargs: Additional arguments passed to `pandas.read_csv`, such as `sep` or `dtype`.

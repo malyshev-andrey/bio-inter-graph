@@ -4,10 +4,13 @@ from typing import Callable
 import pandas as pd
 
 from .main import read_feature_table
+from .gff2bed import gff2bed
+from ..shared import CHUNKSIZE
 
 
 DOMAIN = 'ftp.ncbi.nlm.nih.gov'
 PATH = 'genomes/refseq/vertebrate_mammalian/Homo_sapiens/all_assembly_versions'
+FORMATS = ('gtf', 'gff')
 
 def _latest_refseq_release(assembly: str) -> str:
     """
@@ -77,7 +80,7 @@ def load_refseq_annotation(
         assembly: str, *,
         format: str,
         verbose: bool = True,
-        chunksize: int | None = None,
+        chunksize: int | None = CHUNKSIZE,
         filter_func: Callable[[pd.DataFrame], pd.DataFrame] = lambda df: df,
         **kwargs
     ) -> pd.DataFrame:
@@ -98,7 +101,7 @@ def load_refseq_annotation(
     verbose : bool, optional
         If True, print progress messages and details about the loaded data. Defaults to True.
     chunksize : int or None, optional
-        Number of rows to read in each chunk. If None, the entire file is loaded into memory. Defaults to None.
+        Number of rows to read in each chunk. If None, the entire file is loaded into memory. Defaults to CHUNKSIZE.
     filter_func : Callable[[pd.DataFrame], pd.DataFrame], optional
         A callable that filters or processes the loaded DataFrame. It takes a DataFrame as input
         and returns a processed DataFrame. Defaults to an identity function (no filtering).
@@ -148,7 +151,6 @@ def load_refseq_annotation(
             f'Valid arguments are: {", ".join(ASSEMBLIES)}'
         )
 
-    FORMATS = ('gtf', 'gff')
     format = format.lower()
     if format not in FORMATS:
         raise ValueError(
@@ -162,5 +164,35 @@ def load_refseq_annotation(
     if verbose: print(f'RefSeq annotation URL:\n\t{full_path}')
     result = read_feature_table(full_path, chunksize=chunksize, filter_func=filter_func, **kwargs)
     if verbose: print(f'Feature table shape:\n\t{result.shape}')
+
+    return result
+
+
+def load_refseq_bed(assembly: str, feature: str) -> pd.DataFrame:
+    FEATURES = ('gene', 'transcript')
+    if feature not in FEATURES:
+        raise ValueError(
+            f'"{feature}" is not a valid argument. '
+            f'Valid arguments are: {", ".join(FEATURES)}'
+        )
+
+    result = []
+    for format in FORMATS:
+        bed = gff2bed(
+            load_refseq_annotation(
+                assembly,
+                format=format,
+                filter_func=lambda df: df[df['type'].eq(feature)]
+            ),
+            names=feature,
+            format=format
+        )
+        print(f'{format}: {bed.shape[0]}')
+        result.append(bed)
+
+    result = pd.concat(result)
+    result = result.drop_dulicates()
+
+    print(f'result: {bed.shape[0]}')
 
     return result

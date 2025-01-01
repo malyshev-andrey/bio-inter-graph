@@ -166,10 +166,19 @@ def gff2bed(
 
     ft = ft.copy()
 
-    if names == 'gene_id':
-        names = _gff2gene_id
-    elif names == 'transcript_id':
-        names = _gff2transcript_id
+    aliases = {
+        'gene': _gff2gene_id,
+        'transcript': _gff2transcript_id
+    }
+
+    if isinstance(names, str):
+        if names not in aliases:
+            raise ValueError(
+                f'"{names}" is not a valid argument. '
+                f'Valid arguments are: {", ".join(aliases)}'
+            )
+        names = aliases[names]
+
     ft['name'] = names(ft, **kwargs) if callable(names) else names
 
     ft['start'] = ft['start'].astype('int') - 1
