@@ -1,13 +1,40 @@
+from itertools import combinations
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 import pandas as pd
 import networkx as nx
 
-from ..shared import memory
+from .BioMart import load_BioMart_pairwise
+from ..shared import ID_TYPES, memory
 
 
 @memory.cache
 def _build_yagid_graph():
-    result = pd.Series(['a', 'b', 'c'])
+    pairs = []
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        futures = []
+        for ids in combinations(ID_TYPES, r=2):
+            futures.append(executor.submit(load_BioMart_pairwise, *ids))
+
+        for future in as_completed(futures):
+            result = future.result()
+            result.columns = 'source', 'target'
+            pairs.append(result)
+
+    pairs = pd.concat(pairs)
+    yagid_graph = nx.from_pandas_edgelist(pairs)
+    connected_components = nx.connected_components(yagid_graph)
+    result = {}
+    for i, component in enumerate(connected_components):
+        assert i < 1e6
+        for node in component:
+            result[node] = 'YAGID' + str(i).zfill(6)
+    result = pd.Series(result)
+
+    n_components = result.nunique()
+    print(f'Build YAGID graph: {len(result)} ids, {n_components} components')
     return result
+
 
 def id2yagid(ids: pd.Series) -> pd.Series:
     mapping = _build_yagid_graph()
