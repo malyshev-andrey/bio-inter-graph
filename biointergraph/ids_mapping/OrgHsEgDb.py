@@ -65,5 +65,6 @@ def load_OrgHsEgDb_pairwise(id1_type, id2_type):
 
         return result
 
-
-    return _load_OrgHsEgDb(query_func)
+    result = _load_OrgHsEgDb(query_func)
+    print(f'OrgHsEgDb query ({id1_type}, {id2_type}) result: {result.shape}')
+    return result

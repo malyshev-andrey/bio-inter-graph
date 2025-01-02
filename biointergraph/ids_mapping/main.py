@@ -5,6 +5,7 @@ import pandas as pd
 import networkx as nx
 
 from .BioMart import load_BioMart_pairwise
+from .OrgHsEgDb import load_OrgHsEgDb_pairwise
 from ..shared import ID_TYPES, memory
 
 
@@ -14,7 +15,10 @@ def _build_yagid_graph():
     with ThreadPoolExecutor(max_workers=6) as executor:
         futures = []
         for ids in combinations(ID_TYPES, r=2):
-            futures.append(executor.submit(load_BioMart_pairwise, *ids))
+            for assembly in 'GRCh37', 'GRCh38':
+                futures.append(executor.submit(load_BioMart_pairwise, *ids, assembly=assembly))
+
+            futures.append(executor.submit(load_OrgHsEgDb_pairwise, *ids))
 
         for future in as_completed(futures):
             result = future.result()

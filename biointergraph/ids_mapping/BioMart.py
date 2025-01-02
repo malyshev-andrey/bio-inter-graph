@@ -22,7 +22,7 @@ def _load_BioMart_pairwise(
     host = 'grch37.ensembl.org' if assembly == 'GRCh37' else 'www.ensembl.org'
     url = f'https://{host}/biomart/martservice?query={quote(query)}'
 
-    print(f'BioMart query ({id1_type}, {id2_type}): {url[:40]}')
+    print(f'BioMart query ({id1_type}, {id2_type}): {url[:60]}')
 
     result = pd.read_csv(
         url, sep='\t',
