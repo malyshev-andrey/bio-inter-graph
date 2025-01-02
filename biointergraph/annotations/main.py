@@ -133,7 +133,7 @@ def read_feature_table(
         elif len(filepath_or_buffer) <= 60:
             desc = filepath_or_buffer
         else:
-            desc = filepath_or_buffer[30] + ' ... ' + filepath_or_buffer[-30:]
+            desc = filepath_or_buffer[:30] + ' ... ' + filepath_or_buffer[-30:]
 
         with tqdm(desc=desc) as progress_bar:
             for chunk in pd.read_csv(filepath_or_buffer, chunksize=chunksize, **read_csv_kwargs):

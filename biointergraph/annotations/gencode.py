@@ -219,6 +219,7 @@ def load_gencode_bed(assembly: str, feature: str) -> pd.DataFrame:
             f'Valid arguments are: {", ".join(FEATURES)}'
         )
 
+    shapes = []
     result = []
     for format in FORMATS:
         bed = gff2bed(
@@ -233,13 +234,16 @@ def load_gencode_bed(assembly: str, feature: str) -> pd.DataFrame:
             format=format,
             source='gencode'
         )
-        print(f'{format}: {bed.shape[0]}')
+        shapes.append(f'{format}: {bed.shape[0]}')
         result.append(bed)
 
+    shapes = [' | '.join(shapes)]
+
     result = pd.concat(result)
-    print(f'concat: {result.shape[0]}')
+    shapes.append(str(result.shape[0]))
+
     result = result.drop_duplicates()
+    shapes.append(str(result.shape[0]))
 
-    print(f'result: {result.shape[0]}')
-
+    print(f'GENCODE {feature}s to BED-format: {" -> ".join(shapes)}')
     return result

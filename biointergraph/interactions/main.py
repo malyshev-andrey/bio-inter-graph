@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 from scipy.stats import fisher_exact
 from tqdm.auto import tqdm
-tqdm.pandas()
 
 
 def _fisher_pvalue(n12, n1, n2, n):
@@ -48,6 +47,7 @@ def summarize_pairwise(raw_data, symmetrize: bool = False) -> pd.DataFrame:
     result['_freq2'] -= result['size']
     result['_overall'] -= result['_freq1'] + result['_freq2'] + result['size']
 
+    tqdm.pandas(desc="Fisher's Exact Test calculation")
     result['pvalue'] = result.progress_apply(
         lambda row: _fisher_pvalue(
             row['size'], row['_freq1'],

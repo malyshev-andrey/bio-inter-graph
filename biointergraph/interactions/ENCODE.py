@@ -57,6 +57,7 @@ def load_encode_metadata(*, cell_line: str|None = None, assay: str, **kwargs) ->
     params.update(kwargs)
 
     url = f'https://www.encodeproject.org/report.tsv?{urlencode(params)}'
+    print(f'ENCODE metadata URL: {url}')
     metadata = pd.read_csv(url, sep='\t', skiprows=1, dtype='str')
 
     metadata = metadata.loc[:, ~metadata.isna().all()]
@@ -95,8 +96,8 @@ def load_encode_eCLIP(assembly: str, cell_line: str|None = None, **kwargs) -> pd
     metadata = metadata[replicates.eq('1,2')]
 
     result = []
-    with tqdm(desc='peaks') as progress_bar:
-        for _, row in tqdm(metadata.iterrows(), total=metadata.shape[0]):
+    with tqdm(desc='eCLIP peaks found') as progress_bar:
+        for _, row in tqdm(metadata.iterrows(), total=metadata.shape[0], desc='eCLIP experiments'):
             bed = pd.read_csv(
                 f'https://www.encodeproject.org{row["Download URL"]}',
                 sep='\t', usecols=range(6),
