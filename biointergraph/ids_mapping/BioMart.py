@@ -70,7 +70,11 @@ def load_BioMart_pairwise(
         refseq_mrna = _load_BioMart_pairwise('refseq_mrna', id2_type, assembly=assembly)
         refseq_mrna = refseq_mrna.rename(columns=refseq_map)
 
-        return pd.concat([refseq_ncrna, refseq_mrna]).drop_duplicates()
+        result = pd.concat([refseq_ncrna, refseq_mrna]).drop_duplicates()
+        is_valid = result[id1_type].str[:2].isin({'NM', 'NR'})
+        print(f'BioMart: invalid RefSeq transcript ids: {(~is_valid).sum()}')
+        result = result[is_valid]
+        return result
 
     elif id2_type == 'refseq_transcript_id':
         refseq_ncrna = _load_BioMart_pairwise(id1_type, 'refseq_ncrna', assembly=assembly)
@@ -79,7 +83,11 @@ def load_BioMart_pairwise(
         refseq_mrna = _load_BioMart_pairwise(id1_type, 'refseq_mrna', assembly=assembly)
         refseq_mrna = refseq_mrna.rename(columns=refseq_map)
 
-        return pd.concat([refseq_ncrna, refseq_mrna]).drop_duplicates()
+        result = pd.concat([refseq_ncrna, refseq_mrna]).drop_duplicates()
+        is_valid = result[id2_type].str[:2].isin({'NM', 'NR'})
+        print(f'BioMart: invalid RefSeq transcript ids: {(~is_valid).sum()}')
+        result = result[is_valid]
+        return result
 
     else:
         return _load_BioMart_pairwise(id1_type, id2_type, assembly=assembly)

@@ -37,6 +37,7 @@ def _build_yagid_graph():
 
     n_components = result.nunique()
     print(f'Build YAGID graph: {len(result)} ids, {n_components} components')
+    assert result.index.str.match(r'^\d+|ENS[TG]\d{11}|N[MR]_\d+$').all()
     return result
 
 
