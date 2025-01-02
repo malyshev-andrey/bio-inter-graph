@@ -6,7 +6,7 @@ from tqdm.auto import tqdm
 
 from ..shared import BED_COLUMNS
 from ..annotations import load_refseq_bed, load_gencode_bed, sanitize_bed, bed_intersect
-from platformdirs import unix
+from ..ids import drop_id_version
 
 
 def load_encode_metadata(*, cell_line: str|None = None, assay: str, **kwargs) -> pd.DataFrame:
@@ -65,7 +65,7 @@ def load_encode_metadata(*, cell_line: str|None = None, assay: str, **kwargs) ->
     return metadata
 
 
-def load_encode_eCLIP(assembly: str, **kwargs) -> pd.DataFrame:
+def load_encode_eCLIP(assembly: str, cell_line: str|None = None, **kwargs) -> pd.DataFrame:
     ASSEMBLIES = {
         'hg38': 'GRCh38', 'GRCh38': 'GRCh38',
         'GRCh37': 'hg19', 'hg19': 'hg19',
@@ -83,6 +83,8 @@ def load_encode_eCLIP(assembly: str, **kwargs) -> pd.DataFrame:
         file_format='bed',
         assembly=assembly
     )
+    if cell_line is not None:
+        default_kwargs['cell_line'] = cell_line
     default_kwargs.update(kwargs)
     metadata = load_encode_metadata(**default_kwargs)
 
@@ -112,8 +114,8 @@ def load_encode_eCLIP(assembly: str, **kwargs) -> pd.DataFrame:
     return result
 
 
-def encode_eCLIP2pairwise(assembly: str, annotation: str, **kwargs) -> pd.DataFrame:
-    eCLIP_bed = load_encode_eCLIP(assembly=assembly)
+def encode_eCLIP2pairwise(assembly: str, annotation: str, cell_line: str|None = None, **kwargs) -> pd.DataFrame:
+    eCLIP_bed = load_encode_eCLIP(assembly=assembly, cell_line=cell_line)
     annotation_bed = {
         'gencode': load_gencode_bed,
         'refseq': load_refseq_bed
@@ -135,5 +137,13 @@ def encode_eCLIP2pairwise(assembly: str, annotation: str, **kwargs) -> pd.DataFr
     is_proper = covered_peak_frac == 1
     print(f'Improper interactions frac: {1 - is_proper.mean()}')
     result = result[is_proper]
+
+    result['name2'] = drop_id_version(result['name2'])
+    result = result.groupby(['name1', 'name2'], as_index=False).size()
+
+    freq1 = result.groupby('name1')['size'].transform('sum')
+    freq2 = result.groupby('name2')['size'].transform('sum')
+    overall = result['size'].sum()
+    result['PMI'] = np.log2(result['size'] * overall / (freq1 * freq2))
 
     return result
