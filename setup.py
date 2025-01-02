@@ -16,6 +16,7 @@ setup(
         'pandas>=1.3.0',
         'tqdm>=4.42.0',
         'requests>=2.20.0',
+        'scipy>=1.0.0,<2.0.0',
         'PyRanges>=0.0.114'
     ],
     python_requires=">=3.10",
