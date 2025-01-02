@@ -10,7 +10,6 @@ from ..annotations import load_refseq_bed, load_gencode_bed, sanitize_bed, bed_i
 from ..ids import drop_id_version
 
 
-@memory.cache
 def load_encode_metadata(*, cell_line: str|None = None, assay: str, **kwargs) -> pd.DataFrame:
     """
     Loads metadata for ENCODE project files based on the specified cell line and assay.
@@ -69,7 +68,7 @@ def load_encode_metadata(*, cell_line: str|None = None, assay: str, **kwargs) ->
 
 
 @memory.cache
-def _load_encode_eCLIP(assembly: str, cell_line: str|None = None, **kwargs) -> pd.DataFrame:
+def _load_encode_eCLIP(assembly: str, cell_line: str|None = None) -> pd.DataFrame:
     ASSEMBLIES = {
         'hg38': 'GRCh38', 'GRCh38': 'GRCh38',
         'GRCh37': 'hg19', 'hg19': 'hg19',
@@ -89,7 +88,6 @@ def _load_encode_eCLIP(assembly: str, cell_line: str|None = None, **kwargs) -> p
     )
     if cell_line is not None:
         default_kwargs['cell_line'] = cell_line
-    default_kwargs.update(kwargs)
     metadata = load_encode_metadata(**default_kwargs)
 
     replicates = metadata['Biological replicates']
@@ -119,7 +117,7 @@ def _load_encode_eCLIP(assembly: str, cell_line: str|None = None, **kwargs) -> p
 
 
 @memory.cache
-def encode_eCLIP2pairwise(assembly: str, annotation: str, cell_line: str|None = None, **kwargs) -> pd.DataFrame:
+def encode_eCLIP2pairwise(assembly: str, annotation: str, cell_line: str|None = None) -> pd.DataFrame:
     eCLIP_bed = _load_encode_eCLIP(assembly=assembly, cell_line=cell_line)
     annotation_bed = {
         'gencode': load_gencode_bed,
@@ -129,8 +127,7 @@ def encode_eCLIP2pairwise(assembly: str, annotation: str, cell_line: str|None = 
     result = bed_intersect(
         eCLIP_bed,
         annotation_bed,
-        unify_chr_assembly=assembly,
-        **kwargs
+        unify_chr_assembly=assembly
     )
     intersect = (
         np.minimum(result['end1'], result['end2'])
