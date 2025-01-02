@@ -160,7 +160,7 @@ def load_refseq_annotation(
         )
 
     release = _latest_refseq_release(ASSEMBLIES[assembly])
-    full_path = '/'.join([f'https://{DOMAIN}', PATH, f'{release}/{release}_genomic.{format}.gz'])
+    full_path = '/'.join([f'ftp://{DOMAIN}', PATH, f'{release}/{release}_genomic.{format}.gz'])
 
     if verbose: print(f'RefSeq annotation URL:\n\t{full_path}')
     result = read_feature_table(full_path, chunksize=chunksize, filter_func=filter_func, **kwargs)

@@ -117,4 +117,11 @@ def encode_eCLIP2pairwise(assembly: str, annotation: str) -> pd.DataFrame:
         'gencode': load_gencode_bed,
         'refseq': load_refseq_bed
     }[annotation](assembly=assembly, feature='gene')
-    return bed_intersect(eCLIP_bed, annotation_bed, unify_chr_assembly=assembly)
+
+    result = bed_intersect(
+        eCLIP_bed,
+        annotation_bed,
+        unify_chr_assembly=assembly,
+        jaccard=True
+    )
+    return result

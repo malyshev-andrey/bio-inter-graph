@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pyranges as pr
 
@@ -36,6 +37,7 @@ def bed_intersect(
         bed2: pd.DataFrame, *,
         strandedness: str|None = 'same',
         unify_chr_assembly: str|None = None,
+        jaccard: bool = False,
         **kwargs
     ) -> pd.DataFrame:
     """
@@ -85,5 +87,17 @@ def bed_intersect(
         'Score_b': 'score2', 'Strand_b': 'strand2'
     }
     result = result.rename(columns=names_map)
+
+    if jaccard:
+        union = (
+            np.maximum(result['end1'], result['end2'])
+            - np.minimum(result['start1'], result['start2'])
+        )
+        intersect = (
+            np.minimum(result['end1'], result['end2'])
+            - np.maximum(result['start1'], result['start2'])
+        )
+        assert (result['Overlap'] == intersect).all()
+        result['jaccard'] = intersect / union
 
     return result
