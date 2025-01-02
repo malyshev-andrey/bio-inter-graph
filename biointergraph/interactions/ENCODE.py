@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
+from .main import summarize_pairwise
 from ..shared import BED_COLUMNS
 from ..annotations import load_refseq_bed, load_gencode_bed, sanitize_bed, bed_intersect
 from ..ids import drop_id_version
@@ -139,11 +140,7 @@ def encode_eCLIP2pairwise(assembly: str, annotation: str, cell_line: str|None = 
     result = result[is_proper]
 
     result['name2'] = drop_id_version(result['name2'])
-    result = result.groupby(['name1', 'name2'], as_index=False).size()
 
-    freq1 = result.groupby('name1')['size'].transform('sum')
-    freq2 = result.groupby('name2')['size'].transform('sum')
-    overall = result['size'].sum()
-    result['PMI'] = np.log2(result['size'] * overall / (freq1 * freq2))
+    result = summarize_pairwise(result, symmetrize=False)
 
     return result
