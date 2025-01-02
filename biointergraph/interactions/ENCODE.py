@@ -1,5 +1,6 @@
 from urllib.parse import urlencode
 
+import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
@@ -122,7 +123,17 @@ def encode_eCLIP2pairwise(assembly: str, annotation: str, **kwargs) -> pd.DataFr
         eCLIP_bed,
         annotation_bed,
         unify_chr_assembly=assembly,
-        jaccard=True,
         **kwargs
     )
+    intersect = (
+        np.minimum(result['end1'], result['end2'])
+        - np.maximum(result['start1'], result['start2'])
+    )
+    covered_peak_frac = intersect / (result['end1'] - result['start1'])
+    assert (covered_peak_frac <= 1).all() and (covered_peak_frac >= 0).all()
+
+    is_proper = covered_peak_frac == 1
+    print(f'Improper interactions frac: {1 - is_proper.mean()}')
+    result = result[is_proper]
+
     return result
