@@ -17,7 +17,8 @@ setup(
         'tqdm>=4.42.0',
         'requests>=2.20.0',
         'scipy>=1.0.0,<2.0.0',
-        'PyRanges>=0.0.114'
+        'PyRanges>=0.0.114',
+        'joblib>=1.2.0,<2.0.0'
     ],
     python_requires=">=3.10",
     description="Graph Algorithms for Biological Interactomes",
