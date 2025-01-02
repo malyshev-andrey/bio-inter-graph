@@ -141,6 +141,6 @@ def encode_eCLIP2pairwise(assembly: str, annotation: str, cell_line: str|None = 
 
     result['name2'] = drop_id_version(result['name2'])
 
-    result = summarize_pairwise(result, symmetrize=False)
+    result = summarize_pairwise(result[['name1', 'name2']], symmetrize=False)
 
     return result
