@@ -111,7 +111,7 @@ def load_encode_eCLIP(assembly: str, **kwargs) -> pd.DataFrame:
     return result
 
 
-def encode_eCLIP2pairwise(assembly: str, annotation: str) -> pd.DataFrame:
+def encode_eCLIP2pairwise(assembly: str, annotation: str, **kwargs) -> pd.DataFrame:
     eCLIP_bed = load_encode_eCLIP(assembly=assembly)
     annotation_bed = {
         'gencode': load_gencode_bed,
@@ -122,6 +122,7 @@ def encode_eCLIP2pairwise(assembly: str, annotation: str) -> pd.DataFrame:
         eCLIP_bed,
         annotation_bed,
         unify_chr_assembly=assembly,
-        jaccard=True
+        jaccard=True,
+        **kwargs
     )
     return result
