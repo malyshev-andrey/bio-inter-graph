@@ -1,6 +1,8 @@
 from requests.utils import quote
 import pandas as pd
 
+from ..shared import ID_TYPES, memory
+
 
 def _load_BioMart_pairwise(
         id1_type: str, id2_type: str, *,
@@ -33,11 +35,26 @@ def _load_BioMart_pairwise(
     return result
 
 
+@memory.cache
 def load_BioMart_pairwise(
         id1_type: str, id2_type: str, *,
         assembly: str = 'GRCh38'
     ) -> pd.DataFrame:
-    assert id1_type != id2_type
+
+    if id1_type not in ID_TYPES:
+        raise ValueError(
+            f'"{id1_type}" is not a valid argument. '
+            f'Valid arguments are: {", ".join(ID_TYPES)}'
+        )
+    if id2_type not in ID_TYPES:
+        raise ValueError(
+            f'"{id2_type}" is not a valid argument. '
+            f'Valid arguments are: {", ".join(ID_TYPES)}'
+        )
+    if id1_type == id2_type:
+        raise ValueError(
+            f'Expected different id types, got {id1_type} == {id2_type}'
+        )
 
     refseq_map = {
         'refseq_ncrna': 'refseq_transcript_id',

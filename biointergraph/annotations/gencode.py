@@ -6,7 +6,7 @@ from typing import Callable
 import pandas as pd
 
 from .main import read_feature_table
-from ..shared import CHUNKSIZE
+from ..shared import CHUNKSIZE, memory
 from .gff2bed import gff2bed
 
 
@@ -211,6 +211,7 @@ def load_gencode_annotation(
     return result
 
 
+@memory.cache
 def load_gencode_bed(assembly: str, feature: str) -> pd.DataFrame:
     FEATURES = ('gene', 'transcript')
     if feature not in FEATURES:

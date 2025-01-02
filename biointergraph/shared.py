@@ -11,6 +11,12 @@ BED_COLUMNS = [
     'chr', 'start', 'end',
     'name', 'score', 'strand'
 ]
+ID_TYPES = [
+    'entrezgene_id',
+    'ensembl_gene_id',
+    'ensembl_transcript_id',
+    'refseq_transcript_id'
+]
 
 CHUNKSIZE = 10000
 

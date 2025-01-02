@@ -1,12 +1,11 @@
 from ftplib import FTP
 from typing import Callable
 
-from numpy import result_type
 import pandas as pd
 
 from .main import read_feature_table
 from .gff2bed import gff2bed
-from ..shared import CHUNKSIZE
+from ..shared import CHUNKSIZE, memory
 
 
 DOMAIN = 'ftp.ncbi.nlm.nih.gov'
@@ -169,6 +168,7 @@ def load_refseq_annotation(
     return result
 
 
+@memory.cache
 def load_refseq_bed(assembly: str, feature: str) -> pd.DataFrame:
     FEATURES = ('gene', 'transcript')
     if feature not in FEATURES:
