@@ -7,11 +7,13 @@ import networkx as nx
 from .BioMart import load_BioMart_pairwise
 from .OrgHsEgDb import load_OrgHsEgDb_pairwise
 from ..shared import ID_TYPES, memory
+from ..annotations import gencode_refseq_intersect2pairwise
 
 
 @memory.cache
 def _build_yagid_graph():
     pairs = []
+    # BioMart + OrgHsEgDb data
     with ThreadPoolExecutor(max_workers=6) as executor:
         futures = []
         for ids in combinations(ID_TYPES, r=2):
@@ -24,6 +26,10 @@ def _build_yagid_graph():
             result = future.result()
             result.columns = 'source', 'target'
             pairs.append(result)
+
+    # annotations intersections
+    pairs.append(gencode_refseq_intersect2pairwise('hg19'))
+    pairs.append(gencode_refseq_intersect2pairwise('hg38'))
 
     pairs = pd.concat(pairs)
     yagid_graph = nx.from_pandas_edgelist(pairs)

@@ -4,7 +4,7 @@ from .refseq import load_refseq_annotation, load_refseq_bed
 from .extended import load_extended_annotation
 from .ucsc import fetch_ucsc_table, unify_chr
 from .gff2bed import gff2bed
-from .intersect import bed_intersect
+from .intersect import bed_intersect, gencode_refseq_intersect2pairwise
 
 
 __all__ = [
@@ -14,5 +14,5 @@ __all__ = [
     'load_extended_annotation',
     'fetch_ucsc_table', 'unify_chr',
     'gff2bed',
-    'bed_intersect'
+    'bed_intersect', 'gencode_refseq_intersect2pairwise'
 ]

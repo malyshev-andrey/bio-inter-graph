@@ -5,6 +5,8 @@ import sqlite3
 import requests
 import pandas as pd
 
+from ..shared import memory
+
 
 def _load_OrgHsEgDb(query_func):
     url = 'https://bioconductor.org/packages/release/data/annotation/src/contrib/org.Hs.eg.db_3.20.0.tar.gz'
@@ -24,6 +26,7 @@ def _load_OrgHsEgDb(query_func):
                 return query_func(conn)
 
 
+@memory.cache
 def load_OrgHsEgDb_pairwise(id1_type, id2_type):
     def query_func(conn) -> pd.DataFrame:
         def load_table(id_type: str) -> pd.DataFrame:
