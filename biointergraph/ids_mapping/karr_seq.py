@@ -7,6 +7,15 @@ from ..interactions.karr_seq import _retrieve_karr_seq_metadata, _load_single_ka
 from ..ids import drop_id_version
 
 
+def _load_karr_seq_ids(path: str) -> pd.DataFrame:
+    result = _load_single_karr_seq(
+        path,
+        filter_func=lambda df: df[['seqid1', 'seqid2']]
+    )
+    result = set(result['seqid1']) | set(result['seqid2'])
+    return result
+
+
 @memory.cache
 def karr_seq_ids2entrezgene_id():
     ids = set()
@@ -14,16 +23,10 @@ def karr_seq_ids2entrezgene_id():
     with ProcessPoolExecutor(max_workers=5) as executor:
         futures = []
         for url in _retrieve_karr_seq_metadata()['url']:
-            futures.append(executor.submit(
-                _load_single_karr_seq,
-                url,
-                filter_func=lambda df: df[['seqid1', 'seqid2']]
-            ))
+            futures.append(executor.submit(_load_karr_seq_ids, url,))
 
         for future in as_completed(futures):
-            result = future.result()
-            ids.update(result['seqid1'])
-            ids.update(result['seqid2'])
+            ids.update(future.result())
 
 
     ids = pd.Series(list(ids))
