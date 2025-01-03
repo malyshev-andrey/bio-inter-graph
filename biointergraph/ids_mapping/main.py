@@ -7,7 +7,7 @@ import networkx as nx
 from .intersect import gencode_refseq_intersect2pairwise, extended_refseq_intersect2pairwise
 from .BioMart import load_BioMart_pairwise
 from .OrgHsEgDb import load_OrgHsEgDb_pairwise
-from ..annotations import extended_gene_id2ensembl_gene_id
+from ..annotations import extended_gene_id2ensembl_gene_id, load_extended_annotation
 from ..shared import ID_TYPES, memory
 
 
@@ -41,6 +41,8 @@ def _build_yagid_graph():
     assert pairs.shape[1] == 2
 
     yagid_graph = nx.from_pandas_edgelist(pairs)
+    yagid_graph.add_nodes_from(load_extended_annotation()['extended_gene_id'])
+
     connected_components = nx.connected_components(yagid_graph)
     result = {}
     for i, component in enumerate(connected_components):
