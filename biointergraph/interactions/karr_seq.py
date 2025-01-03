@@ -4,16 +4,18 @@ import requests
 import pandas as pd
 from tqdm.auto import tqdm
 
+from ..shared import memory, CHUNKSIZE
 
+
+@memory.cache
 def _retrieve_karr_seq_metadata(cell_line: str|None = None) -> pd.DataFrame:
     metadata = pd.read_csv(
         'https://ftp.ncbi.nlm.nih.gov/geo/series/GSE166nnn/GSE166155/suppl/filelist.txt',
         sep='\t',
         usecols=['Name']
-    )
-    metadata = metadata.rename(columns={'Name': 'name'})
-
-    metadata = metadata[~metadata['name'].eq('GSE166155_RAW.tar')]
+    )['Name']
+    metadata = metadata.set_axis(metadata)
+    metadata = metadata[~metadata.eq('GSE166155_RAW.tar')]
 
     regex = (
         r'^(?P<accession>GSM\d{7})_'
@@ -23,9 +25,9 @@ def _retrieve_karr_seq_metadata(cell_line: str|None = None) -> pd.DataFrame:
         r'(?P<repl>R0[12])'
         r'\.dedup\.pairs\.gz$'
     )
-    assert metadata['name'].str.match(regex).all()
-    groups = metadata['name'].str.extract(regex)
-    metadata = pd.concat([metadata, groups], axis=1)
+    assert metadata.str.match(regex).all()
+    metadata = metadata.str.extract(regex)
+    assert not metadata.isna().any().any()
 
     frac_regex = r'-(?P<frac>Total|Nuclear)(RNA)?$'
     metadata['frac'] = metadata['conditions'].str.extract(frac_regex)['frac']
@@ -62,20 +64,22 @@ def _retrieve_karr_seq_metadata(cell_line: str|None = None) -> pd.DataFrame:
     metadata['url'] = metadata.apply(
         lambda row: (
             f'https://ftp.ncbi.nlm.nih.gov/geo/samples'
-            f'/{row["accession"][:-3] + "nnn"}/{row["accession"]}/suppl/{row["name"]}'
+            f'/{row["accession"][:-3] + "nnn"}/{row["accession"]}/suppl/{row.name}'
         ),
         axis=1
     )
     for url in metadata['url']:
         requests.head(url, allow_redirects=True, timeout=5).raise_for_status()
 
+    metadata['url'] = metadata['url'].str.replace(r'https://', 'ftp://')
     return metadata
 
 
+@memory.cache
 def _load_single_karr_seq(
         path, *,
         filter_func: Callable = lambda df: df,
-        chunksize: int|None = None
+        chunksize: int|None = CHUNKSIZE
     ) -> pd.DataFrame:
 
     columns = (
@@ -97,8 +101,7 @@ def _load_single_karr_seq(
                 result.append(filter_func(chunk))
         result = pd.concat(result)
 
-    assert result['pos1'].str.isdigit().all()
-    assert result['pos2'].str.isdigit().all()
+    assert result['pos1'].str.isdigit().all() and result['pos2'].str.isdigit().all()
 
     return result
 
