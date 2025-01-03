@@ -23,15 +23,18 @@ def _build_yagid_graph():
             futures.append(executor.submit(load_OrgHsEgDb_pairwise, *ids))
 
         for future in as_completed(futures):
-            result = future.result()
-            result.columns = 'source', 'target'
-            pairs.append(result)
+            pairs.append(future.result())
 
     # annotations intersections
     pairs.append(gencode_refseq_intersect2pairwise('hg19'))
     pairs.append(gencode_refseq_intersect2pairwise('hg38'))
 
+    for df in pairs:
+        assert df.shape[1] == 2
+        df.columns = 'source', 'target'
     pairs = pd.concat(pairs)
+    assert pairs.shape[1] == 2
+
     yagid_graph = nx.from_pandas_edgelist(pairs)
     connected_components = nx.connected_components(yagid_graph)
     result = {}
