@@ -1,4 +1,4 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import pandas as pd
 
@@ -11,12 +11,13 @@ from ..ids import drop_id_version
 def karr_seq_ids2entrezgene_id():
     ids = set()
 
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    with ProcessPoolExecutor(max_workers=5) as executor:
         futures = []
         for url in _retrieve_karr_seq_metadata()['url']:
             futures.append(executor.submit(
                 _load_single_karr_seq,
-                url, filter_func=lambda df: df[['seqid1', 'seqid2']]
+                url,
+                filter_func=lambda df: df[['seqid1', 'seqid2']]
             ))
 
         for future in as_completed(futures):
