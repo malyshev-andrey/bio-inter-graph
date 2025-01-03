@@ -100,7 +100,8 @@ def _load_single_karr_seq(
                 result.append(filter_func(chunk))
         result = pd.concat(result)
 
-    assert result['pos1'].str.isdigit().all() and result['pos2'].str.isdigit().all()
+    assert 'pos1' not in result.columns or result['pos1'].str.isdigit().all()
+    assert 'pos2' not in result.columns or result['pos2'].str.isdigit().all()
 
     return result
 
