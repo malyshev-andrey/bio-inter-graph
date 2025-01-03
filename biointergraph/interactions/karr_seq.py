@@ -75,7 +75,6 @@ def _retrieve_karr_seq_metadata(cell_line: str|None = None) -> pd.DataFrame:
     return metadata
 
 
-@memory.cache
 def _load_single_karr_seq(
         path, *,
         filter_func: Callable = lambda df: df,
