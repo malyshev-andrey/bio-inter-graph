@@ -1,4 +1,4 @@
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pandas as pd
 from tqdm.auto import tqdm
@@ -8,26 +8,23 @@ from ..interactions.karr_seq import _retrieve_karr_seq_metadata, _load_single_ka
 from ..ids import drop_id_version
 
 
-def _load_karr_seq_ids(path: str) -> pd.DataFrame:
-    result = _load_single_karr_seq(
-        path,
-        filter_func=lambda df: df[['seqid1', 'seqid2']]
-    )
-    result = set(result['seqid1']) | set(result['seqid2'])
-    return result
-
-
 @memory.cache
 def karr_seq_ids2entrezgene_id():
     ids = set()
 
-    with ProcessPoolExecutor(max_workers=5) as executor:
+    with ThreadPoolExecutor(max_workers=20) as executor:
         futures = []
         for url in _retrieve_karr_seq_metadata()['url']:
-            futures.append(executor.submit(_load_karr_seq_ids, url,))
+            futures.append(executor.submit(
+                _load_single_karr_seq,
+                url,
+                filter_func=lambda df: df[['seqid1', 'seqid2']]
+            ))
 
         for future in tqdm(as_completed(futures)):
-            ids.update(future.result())
+            result = future.result()
+            ids.update(result['seqid1'])
+            ids.update(result['seqid2'])
 
 
     ids = pd.Series(list(ids))
