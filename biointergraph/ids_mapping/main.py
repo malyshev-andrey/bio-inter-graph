@@ -7,6 +7,7 @@ import networkx as nx
 from .intersect import gencode_refseq_intersect2pairwise, extended_refseq_intersect2pairwise
 from .BioMart import load_BioMart_pairwise
 from .OrgHsEgDb import load_OrgHsEgDb_pairwise
+from ..annotations import extended_gene_id2ensembl_gene_id
 from ..shared import ID_TYPES, memory
 
 
@@ -28,7 +29,10 @@ def _build_yagid_graph():
     # annotations intersections
     pairs.append(gencode_refseq_intersect2pairwise('hg19'))
     pairs.append(gencode_refseq_intersect2pairwise('hg38'))
+
+    # extended annotation
     pairs.append(extended_refseq_intersect2pairwise())
+    pairs.append(extended_gene_id2ensembl_gene_id())
 
     for df in pairs:
         assert df.shape[1] == 2

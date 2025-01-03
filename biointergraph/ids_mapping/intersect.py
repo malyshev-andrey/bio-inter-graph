@@ -22,7 +22,7 @@ def _load_refseq_data(assembly: str) -> pd.DataFrame:
 def _intersect2pairwise(intersect: pd.DataFrame) -> pd.DataFrame:
     is_proper = intersect['jaccard'] >= 0.8
     print(f'Annotations intersect: improper intersections frac: {1 - is_proper.mean()}')
-    intersect = intersect[is_proper]
+    intersect = intersect[is_proper].copy()
     intersect['name1'] = drop_id_version(intersect['name1'])
     intersect['name2'] = drop_id_version(intersect['name2'])
 
@@ -49,6 +49,7 @@ def gencode_refseq_intersect2pairwise(assembly: str) -> pd.DataFrame:
     return result
 
 
+@memory.cache
 def extended_refseq_intersect2pairwise() -> pd.DataFrame:
     refseq_data = _load_refseq_data('hg38')
     extended_data = load_extended_annotation(convert2bed=True)

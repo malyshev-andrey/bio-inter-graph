@@ -1,9 +1,12 @@
+from nis import cat
 import pandas as pd
 
-from ..shared import BED_COLUMNS
+from ..shared import BED_COLUMNS, memory
+from ..ids import drop_id_version
 
 
-def load_extended_annotation(convert2bed: bool = False, **kwargs) -> pd.DataFrame:
+@memory.cache
+def load_extended_annotation(convert2bed: bool = False) -> pd.DataFrame:
     url = 'https://drive.usercontent.google.com/download?id=1n2VDbdYe-0di0PVjOKxxk0hZgC914l4e&export=download&confirm=t'
 
     default_kwargs = dict(
@@ -17,7 +20,6 @@ def load_extended_annotation(convert2bed: bool = False, **kwargs) -> pd.DataFram
         usecols=range(8),
         dtype='str'
     )
-    default_kwargs.update(kwargs)
 
     result = pd.read_csv(url, **default_kwargs)
 
@@ -41,3 +43,13 @@ def load_extended_annotation(convert2bed: bool = False, **kwargs) -> pd.DataFram
     result['score'] = '.'
 
     return result[BED_COLUMNS]
+
+
+@memory.cache
+def extended_gene_id2ensembl_gene_id() -> pd.DataFrame:
+    result = load_extended_annotation()
+    result = result.loc[result['source'].eq('gencode44'), ['gene_id', 'extended_gene_id']]
+    result['gene_id'] = drop_id_version(result['gene_id'])
+    assert result['gene_id'].str.match(r'^ENSG\d{11}$').all()
+    assert not result.duplicated().any()
+    return result
