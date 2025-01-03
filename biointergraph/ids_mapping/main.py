@@ -46,7 +46,9 @@ def _build_yagid_graph():
 
     n_components = result.nunique()
     print(f'Build YAGID graph: {len(result)} ids, {n_components} components')
-    assert result.index.str.match(r'^\d+|ENS[TG]\d{11}|N[MR]_\d+$').all()
+    is_valid = result.index.str.match(r'^\d+|ENS[TG]\d{11}|N[MR]_\d+$')
+    sample = result[~is_valid].index[:5]
+    assert is_valid.all(), f'_build_yagid_graph: invalid IDs: {sample}'
     return result
 
 

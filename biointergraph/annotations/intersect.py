@@ -113,6 +113,10 @@ def gencode_refseq_intersect2pairwise(assembly: str) -> pd.DataFrame:
         load_refseq_bed(assembly=assembly, feature='gene'),
         load_refseq_bed(assembly=assembly, feature='transcript')
     ])
+    is_valid = refseq_data['name'].str[:2].isin({'NM', 'NR'})
+    print(f'GENCODE/RefSeq intersect: invalid RefSeq IDs frac: {1 - is_valid.mean()}')
+    refseq_data = refseq_data[is_valid]
+
     gencode_data = pd.concat([
         load_gencode_bed(assembly=assembly, feature='gene'),
         load_gencode_bed(assembly=assembly, feature='transcript')
