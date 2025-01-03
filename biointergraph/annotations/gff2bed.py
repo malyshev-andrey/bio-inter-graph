@@ -1,5 +1,6 @@
 from typing import Callable
 
+import numpy as np
 import pandas as pd
 
 from ..shared import BED_COLUMNS
@@ -139,7 +140,7 @@ def _gff2transcript_id(ft: pd.DataFrame, *, format: str, source: str) -> pd.Seri
 
 def gff2bed(
         ft: pd.DataFrame, *,
-        names: pd.Series | Callable[[pd.DataFrame], pd.Series] | str,
+        names: pd.Series | Callable[[pd.DataFrame], pd.Series] | str | None = None,
         **kwargs
     ) -> pd.DataFrame:
     """
@@ -165,21 +166,32 @@ def gff2bed(
     """
 
     ft = ft.copy()
+    ft['name'] = '.'
 
-    aliases = {
+    alias2func = {
         'gene': _gff2gene_id,
         'transcript': _gff2transcript_id
     }
 
-    if isinstance(names, str):
-        if names not in aliases:
-            raise ValueError(
-                f'"{names}" is not a valid argument. '
-                f'Valid arguments are: {", ".join(aliases)}'
+    if names is None:
+        for alias in alias2func:
+            ft['name'] = np.where(
+                ft['type'].eq(alias),
+                alias2func[alias](ft, **kwargs),
+                ft['name']
             )
-        names = aliases[names]
-
-    ft['name'] = names(ft, **kwargs) if callable(names) else names
+        invalid_frac = ft['name'].eq('.').mean()
+        if invalid_frac > 0:
+            print(f'gff2bed: output bed invalid names frac: {invalid_frac:.04f}')
+    else:
+        if isinstance(names, str):
+            if names not in alias2func:
+                raise ValueError(
+                    f'"{names}" is not a valid argument. '
+                    f'Valid arguments are: {", ".join(alias2func)}'
+                )
+            names = alias2func[names]
+        ft['name'] = names(ft, **kwargs) if callable(names) else names
 
     ft['start'] = ft['start'].astype('int') - 1
     ft['end'] = ft['end'].astype('int')

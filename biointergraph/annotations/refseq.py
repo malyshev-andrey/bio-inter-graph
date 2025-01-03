@@ -169,13 +169,14 @@ def load_refseq_annotation(
 
 
 @memory.cache
-def load_refseq_bed(assembly: str, feature: str) -> pd.DataFrame:
-    FEATURES = ('gene', 'transcript')
-    if feature not in FEATURES:
-        raise ValueError(
-            f'"{feature}" is not a valid argument. '
-            f'Valid arguments are: {", ".join(FEATURES)}'
-        )
+def load_refseq_bed(assembly: str, feature: str|list[str]|None = None) -> pd.DataFrame:
+    if isinstance(feature, str):
+        feature = [feature]
+    elif feature is None:
+        feature = ['transcript', 'gene']
+    else:
+        if not isinstance(feature, list):
+            raise TypeError('Incorrect feature argument type')
 
     shapes = []
     result = []
@@ -184,9 +185,8 @@ def load_refseq_bed(assembly: str, feature: str) -> pd.DataFrame:
             load_refseq_annotation(
                 assembly,
                 format=format,
-                filter_func=lambda df: df[df['type'].eq(feature)]
+                filter_func=lambda df: df[df['type'].isin(feature)]
             ),
-            names=feature,
             format=format,
             source='refseq'
         )

@@ -3,20 +3,17 @@ import pandas as pd
 from ..shared import memory
 from ..ids import drop_id_version
 from ..annotations import load_refseq_bed, load_gencode_bed, bed_intersect, load_extended_annotation
+from curses.ascii import isdigit
 
 
 @memory.cache
 def _load_refseq_data(assembly: str) -> pd.DataFrame:
-    refseq_trascripts = load_refseq_bed(assembly=assembly, feature='transcript')
-    is_valid = refseq_trascripts['name'].str[:2].isin({'NM', 'NR'})
+    result = load_refseq_bed(assembly=assembly)
+    is_valid = result['name'].str[:2].isin({'NM', 'NR'}) | result['name'].str.isdigit()
     print(f'GENCODE/RefSeq intersect: invalid RefSeq IDs frac: {1 - is_valid.mean()}')
-    refseq_trascripts = refseq_trascripts[is_valid]
+    result = result[is_valid]
 
-    refseq_data = pd.concat([
-        load_refseq_bed(assembly=assembly, feature='gene'),
-        refseq_trascripts
-    ])
-    return refseq_data
+    return result
 
 
 def _intersect2pairwise(intersect: pd.DataFrame) -> pd.DataFrame:
@@ -32,15 +29,9 @@ def _intersect2pairwise(intersect: pd.DataFrame) -> pd.DataFrame:
 
 @memory.cache
 def gencode_refseq_intersect2pairwise(assembly: str) -> pd.DataFrame:
-    refseq_data = _load_refseq_data(assembly)
-    gencode_data = pd.concat([
-        load_gencode_bed(assembly=assembly, feature='gene'),
-        load_gencode_bed(assembly=assembly, feature='transcript')
-    ])
-
     result = _intersect2pairwise(bed_intersect(
-        refseq_data,
-        gencode_data,
+        _load_refseq_data(assembly),
+        load_gencode_bed(assembly),
         unify_chr_assembly=assembly,
         jaccard=True)
     )
