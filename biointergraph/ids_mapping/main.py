@@ -4,10 +4,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd
 import networkx as nx
 
+from .intersect import gencode_refseq_intersect2pairwise, extended_refseq_intersect2pairwise
 from .BioMart import load_BioMart_pairwise
 from .OrgHsEgDb import load_OrgHsEgDb_pairwise
 from ..shared import ID_TYPES, memory
-from ..annotations import gencode_refseq_intersect2pairwise
 
 
 @memory.cache
@@ -28,6 +28,7 @@ def _build_yagid_graph():
     # annotations intersections
     pairs.append(gencode_refseq_intersect2pairwise('hg19'))
     pairs.append(gencode_refseq_intersect2pairwise('hg38'))
+    pairs.append(extended_refseq_intersect2pairwise())
 
     for df in pairs:
         assert df.shape[1] == 2
@@ -41,12 +42,12 @@ def _build_yagid_graph():
     for i, component in enumerate(connected_components):
         assert i < 1e6
         for node in component:
-            result[node] = 'YAGID' + str(i).zfill(6)
+            result[node] = 'YAGID' + str(i).zfill(7)
     result = pd.Series(result)
 
     n_components = result.nunique()
     print(f'Build YAGID graph: {len(result)} ids, {n_components} components')
-    is_valid = result.index.str.match(r'^\d+|ENS[TG]\d{11}|N[MR]_\d+$')
+    is_valid = result.index.str.match(r'^\d+|ENS[TG]\d{11}|N[MR]_\d+|EXTG\d{7}$')
     sample = result[~is_valid].index[:5]
     assert is_valid.all(), f'_build_yagid_graph: invalid IDs: {sample}'
     return result
@@ -54,5 +55,5 @@ def _build_yagid_graph():
 
 def id2yagid(ids: pd.Series) -> pd.Series:
     mapping = _build_yagid_graph()
-    ids = ids.map(mapping)
+    ids = ids.map(mapping).combine_first(ids)
     return ids

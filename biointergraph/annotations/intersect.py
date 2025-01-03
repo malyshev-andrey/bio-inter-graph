@@ -3,10 +3,6 @@ import pandas as pd
 import pyranges as pr
 
 from .ucsc import unify_chr
-from ..shared import memory
-from ..ids import drop_id_version
-from .refseq import load_refseq_bed
-from .gencode import load_gencode_bed
 
 
 def _bed2ranges(bed: pd.DataFrame) -> pr.PyRanges:
@@ -104,33 +100,4 @@ def bed_intersect(
         assert (result['Overlap'] == intersect).all()
         result['jaccard'] = intersect / union
 
-    return result
-
-
-@memory.cache
-def gencode_refseq_intersect2pairwise(assembly: str) -> pd.DataFrame:
-    refseq_trascripts = load_refseq_bed(assembly=assembly, feature='transcript')
-    is_valid = refseq_trascripts['name'].str[:2].isin({'NM', 'NR'})
-    print(f'GENCODE/RefSeq intersect: invalid RefSeq IDs frac: {1 - is_valid.mean()}')
-    refseq_trascripts = refseq_trascripts[is_valid]
-
-    refseq_data = pd.concat([
-        load_refseq_bed(assembly=assembly, feature='gene'),
-        refseq_trascripts
-    ])
-
-    gencode_data = pd.concat([
-        load_gencode_bed(assembly=assembly, feature='gene'),
-        load_gencode_bed(assembly=assembly, feature='transcript')
-    ])
-    intersect = bed_intersect(refseq_data, gencode_data, unify_chr_assembly=assembly, jaccard=True)
-    is_proper = intersect['jaccard'] >= 0.8
-    print(f'GENCODE/RefSeq intersect: improper intersections frac: {1 - is_proper.mean()}')
-    intersect = intersect[is_proper]
-    intersect['name1'] = drop_id_version(intersect['name1'])
-    intersect['name2'] = drop_id_version(intersect['name2'])
-
-    result = intersect[['name1', 'name2']].drop_duplicates()
-
-    print(f'GENCODE/RefSeq intersect result for {assembly}: {result.shape}')
     return result
