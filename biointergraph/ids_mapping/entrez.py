@@ -22,7 +22,7 @@ def refseq_transcript_id2entrez_gene_id(ids: pd.Series, chunksize: int = 10000) 
         rettype='gff3'
     )
     ids_data = []
-    with tqdm(desc='IDs processed:', total=n_ids) as progress_bar:
+    with tqdm(desc='refseq2entrez IDs processed:', total=n_ids) as progress_bar:
         with ThreadPoolExecutor(max_workers=n_chunks) as executor:
             futures = []
             for chunk in np.array_split(unique_ids, n_chunks):
