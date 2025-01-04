@@ -2,7 +2,7 @@ from .OrgHsEgDb import load_OrgHsEgDb_pairwise
 from .BioMart import load_BioMart_pairwise
 from .intersect import gencode_refseq_intersect2pairwise, extended_refseq_intersect2pairwise
 from .main import id2yagid
-from .entrez import retrieve_gene_id4refseq_transcripts
+from .entrez import refseq_transcript_id2entrez_gene_id
 from .karr_seq import karr_seq_ids2entrezgene_id
 
 
@@ -11,5 +11,6 @@ __all__ = [
     'load_BioMart_pairwise',
     'gencode_refseq_intersect2pairwise', 'extended_refseq_intersect2pairwise',
     'id2yagid',
-    'retrieve_gene_id4refseq_transcripts'
+    'refseq_transcript_id2entrez_gene_id',
+    'karr_seq_ids2entrezgene_id'
 ]

@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd
 from tqdm.auto import tqdm
 
+from .entrez import refseq_transcript_id2entrez_gene_id
 from ..shared import memory
 from ..interactions.karr_seq import _retrieve_karr_seq_metadata, _load_single_karr_seq
 from ..ids import drop_id_version
@@ -30,4 +31,4 @@ def karr_seq_ids2entrezgene_id():
     ids = pd.Series(list(ids))
     ids = drop_id_version(ids)
     assert ids.is_unique
-    return ids
+    return refseq_transcript_id2entrez_gene_id(ids)
