@@ -22,7 +22,7 @@ def karr_seq_ids2entrezgene_id():
                 filter_func=lambda df: df[['seqid1', 'seqid2']]
             ))
 
-        for future in tqdm(as_completed(futures)):
+        for future in as_completed(futures):
             result = future.result()
             ids.update(result['seqid1'])
             ids.update(result['seqid2'])
@@ -31,4 +31,9 @@ def karr_seq_ids2entrezgene_id():
     ids = pd.Series(list(ids))
     ids = drop_id_version(ids)
     assert ids.is_unique
-    return refseq_transcript_id2entrez_gene_id(ids)
+    result = pd.concat(
+        [ids, refseq_transcript_id2entrez_gene_id(ids)],
+        axis=1
+    )
+    result.columns = 'refseq_transcript_id', 'entrezgene_id'
+    return result

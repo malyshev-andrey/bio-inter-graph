@@ -60,5 +60,4 @@ def refseq_transcript_id2entrez_gene_id(ids: pd.Series, chunksize: int = 10000) 
 
     ids_data = ids_data['gene_id'].set_axis(ids_data['chr'])
     result = ids.map(ids_data)
-
     return result
