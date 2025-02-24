@@ -8,10 +8,12 @@ from ..ids import drop_id_version
 
 
 def _retrieve_ucsc_schema(table, assembly: str = 'hg38') -> list[str]:
-    response = requests.get(
-        f'https://api.genome.ucsc.edu/list/schema?genome={assembly};track={table}'
-    )
+    assert assembly in ['hg19', 'hg38']
+    url = f'https://api.genome.ucsc.edu/list/schema?genome={assembly};track={table}'
+    response = requests.get(url)
+    response.raise_for_status()
     response = response.json()
+    assert 'columnTypes' in response, f'Failed to retrieve schema from {url}'
     response = response['columnTypes']
     response = [column['name'] for column in response]
 
