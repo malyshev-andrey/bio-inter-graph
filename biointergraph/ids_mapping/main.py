@@ -47,10 +47,9 @@ def _build_yagid_graph():
     yagid_graph = nx.from_pandas_edgelist(pairs)
     yagid_graph.add_nodes_from(load_extended_annotation()['extended_gene_id'])
 
-    connected_components = nx.connected_components(yagid_graph)
     result = {}
-    for i, component in enumerate(connected_components):
-        assert i < 1e6
+    for i, component in enumerate(nx.connected_components(yagid_graph)):
+        assert i < 1e7
         for node in component:
             result[node] = 'YAGID' + str(i).zfill(7)
     result = pd.Series(result)
