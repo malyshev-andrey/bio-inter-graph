@@ -2,6 +2,7 @@ import pandas as pd
 
 
 from ..shared import memory
+from ..ids_mapping import id2yapid
 
 
 @memory.cache
@@ -18,11 +19,17 @@ def load_biogrid_interactions() -> pd.DataFrame:
         result['Organism Name Interactor B'].eq('Homo sapiens')
     ).all()
 
-    result = result[['BioGRID ID Interactor A', 'BioGRID ID Interactor B']]
-    result = result.rename(columns={
-        'BioGRID ID Interactor A': 'biogrid_id1',
-        'BioGRID ID Interactor B': 'biogrid_id2'
-    })
+    result['yapid1'] = id2yapid(result['BioGRID ID Interactor A'])
+    result['yapid2'] = id2yapid(result['BioGRID ID Interactor B'])
+
+    ids = ['yapid1', 'yapid2']
+    result = result[ids]
+    swap = dict(zip(ids, ids[::-1]))
+    result = pd.concat([
+        result,
+        result.rename(columns=swap)
+    ])
+    result = result[result['yapid1'] < result['yapid2']]
     result = result.drop_duplicates()
     return result
 
