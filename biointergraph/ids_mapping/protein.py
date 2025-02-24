@@ -2,8 +2,13 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 
+from ..shared import REBUILD_YAPID_MAPPING
 
 def _build_yapid_graph():
+    if not REBUILD_YAPID_MAPPING:
+        result = pd.read_json('id2yapid.json', typ='series')
+        return result
+
     read_csv_kwargs = dict(sep='\t', skiprows=27, dtype='str')
     url = 'https://downloads.thebiogrid.org/Download/BioGRID/Latest-Release/BIOGRID-IDENTIFIERS-LATEST.tab.zip'
     filter_func = lambda df: df[

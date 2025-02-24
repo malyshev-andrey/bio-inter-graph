@@ -9,11 +9,15 @@ from .BioMart import load_BioMart_pairwise
 from .OrgHsEgDb import load_OrgHsEgDb_pairwise
 from .entrez import karr_seq_ids2entrezgene_id
 from ..annotations import extended_gene_id2ensembl_gene_id, load_extended_annotation
-from ..shared import ID_TYPES, memory
+from ..shared import ID_TYPES, REBUILD_YAGID_MAPPING
 
 
-@memory.cache
-def _build_yagid_graph():
+def _build_yagid_graph() -> pd.Series:
+    if not REBUILD_YAGID_MAPPING:
+        result = pd.read_json('id2yagid.json', typ='series')
+        return result
+
+
     pairs = []
     # BioMart + OrgHsEgDb data
     with ThreadPoolExecutor(max_workers=6) as executor:
