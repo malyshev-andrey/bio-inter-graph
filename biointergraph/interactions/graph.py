@@ -1,9 +1,10 @@
 import pandas as pd
 import networkx as nx
+
 from .ENCODE import encode_eCLIP2pairwise
-from karr_seq import load_karr_seq_data
-from ric_seq import load_ric_seq_data
-from protein import load_IntAct_interactions, load_biogrid_interactions, load_string_interactions
+from .karr_seq import load_karr_seq_data
+from .ric_seq import load_ric_seq_data
+from .protein import load_IntAct_interactions, load_biogrid_interactions, load_string_interactions
 from ..shared import memory
 
 
