@@ -21,7 +21,7 @@ def _retrieve_string_ids() -> pd.Series:
 
 @memory.cache
 def _build_yapid_graph():
-    REBUILD_YAPID_MAPPING = True
+    REBUILD_YAPID_MAPPING = False
 
     if not REBUILD_YAPID_MAPPING:
         with importlib.resources.open_text('bio-inter-graph.static', 'id2yapid.json') as file:

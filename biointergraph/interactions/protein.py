@@ -49,10 +49,20 @@ def load_string_interactions() -> pd.DataFrame:
     result['protein1'] = result['protein1'].str.removeprefix('9606.')
     result['protein2'] = result['protein2'].str.removeprefix('9606.')
 
-    result = result[['protein1', 'protein2']]
-    result = result.rename(columns={
-        'protein1': 'ensembl_protein1',
-        'protein2': 'ensembl_protein2'
-    })
-    assert not result.duplicated().any()
+    result['yapid1'] = id2yapid(result['protein1'])
+    result['yapid2'] = id2yapid(result['protein2'])
+    assert (
+        result['yapid1'].str.startswith('YAPID').all() and
+        result['yapid2'].str.startswith('YAPID').all()
+    )
+
+    ids = ['yapid1', 'yapid2']
+    result = result[ids]
+    swap = dict(zip(ids, ids[::-1]))
+    result = pd.concat([
+        result,
+        result.rename(columns=swap)
+    ])
+    result = result[result['yapid1'] < result['yapid2']]
+    result = result.drop_duplicates()
     return result
