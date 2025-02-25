@@ -85,7 +85,7 @@ def _load_ricpipe(**kwargs) -> pd.DataFrame:
 
 
 @memory.cache
-def load_ric_seq_data(pvalue: float|None, **kwargs) -> pd.DataFrame:
+def load_ric_seq_data(pvalue: float|None = None, **kwargs) -> pd.DataFrame:
     columns = ['gene_id1', 'gene_id2', 'p_adj']
     if pvalue is not None:
         kwargs['pvalue'] = pvalue
@@ -111,8 +111,13 @@ def load_ric_seq_data(pvalue: float|None, **kwargs) -> pd.DataFrame:
     assert (result['p_adj'].astype('float') < pvalue).all() or pvalue is None
 
     print(result.groupby(['pipeline', 'annotation']).size())
+
     result['yagid1'] = id2yagid(result['gene_id1'])
     result['yagid2'] = id2yagid(result['gene_id2'])
+    assert (
+        data['yagid1'].str.startswith('YAGID').all() and
+        data['yagid2'].str.startswith('YAGID').all()
+    )
 
     ids = ['yagid1', 'yagid2']
     result = result[ids]
