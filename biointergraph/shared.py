@@ -28,6 +28,3 @@ cache_dir = os.path.join(
 )
 os.makedirs(cache_dir, exist_ok=True)
 memory = Memory(cache_dir, verbose=0)
-
-REBUILD_YAGID_MAPPING = False
-REBUILD_YAPID_MAPPING = False

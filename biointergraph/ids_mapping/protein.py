@@ -4,9 +4,25 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 
-from ..shared import REBUILD_YAPID_MAPPING
+from ..shared import memory
 
+
+def _retrieve_string_ids() -> pd.Series:
+    url = 'https://stringdb-downloads.org/download/stream/protein.physical.links.v12.0/9606.protein.physical.links.v12.0.onlyAB.tsv.gz'
+    result = pd.read_csv(url, sep='\t')
+    result = pd.concat([
+        result['protein1'],
+        result['protein2']
+    ])
+    result = result.str.removeprefix('9606.')
+    result = result.drop_duplicates()
+    return result
+
+
+@memory.cache
 def _build_yapid_graph():
+    REBUILD_YAPID_MAPPING = True
+
     if not REBUILD_YAPID_MAPPING:
         with importlib.resources.open_text('bio-inter-graph.static', 'id2yapid.json') as file:
             result = pd.read_json(file, typ='series')
@@ -40,6 +56,7 @@ def _build_yapid_graph():
     mapping.columns = ['source', 'target']
 
     yapid_graph = nx.from_pandas_edgelist(mapping)
+    yapid_graph.add_nodes_from(_retrieve_string_ids())
 
     connected_components = nx.connected_components(yapid_graph)
 

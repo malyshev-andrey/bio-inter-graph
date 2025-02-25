@@ -10,11 +10,14 @@ from .BioMart import load_BioMart_pairwise
 from .OrgHsEgDb import load_OrgHsEgDb_pairwise
 from .entrez import karr_seq_ids2entrezgene_id
 from ..annotations import extended_gene_id2ensembl_gene_id, load_extended_annotation
-from ..shared import ID_TYPES, REBUILD_YAGID_MAPPING
+from ..shared import ID_TYPES, memory
 from ..ids import drop_id_version
 
 
+@memory.cache
 def _build_yagid_graph() -> pd.Series:
+    REBUILD_YAGID_MAPPING = False
+
     if not REBUILD_YAGID_MAPPING:
         with importlib.resources.open_text('bio-inter-graph.static', 'id2yagid.json') as file:
             result = pd.read_json(file, typ='series')
