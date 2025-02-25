@@ -108,9 +108,7 @@ def load_ric_seq_data(pvalue: float|None, **kwargs) -> pd.DataFrame:
         ricpipe
     ])
 
-    if pvalue is not None:
-        result = result[result['p_adj'].astype('float') < pvalue]
-        assert not result['p_adj'].isna().any()
+    assert (result['p_adj'].astype('float') < pvalue).all() or pvalue is None
 
     print(result.groupby(['pipeline', 'annotation']).size())
     result['yagid1'] = id2yagid(result['gene_id1'])
