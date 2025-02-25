@@ -61,16 +61,14 @@ def _build_yapid_graph():
     connected_components = nx.connected_components(yapid_graph)
 
     result = {}
-    for component in connected_components:
-        biogrid_id = float('-inf')
+    for i, component in enumerate(connected_components):
+        assert i < 1e7
         for node in component:
-            if node.isdigit():
-                biogrid_id = max(biogrid_id, int(node))
-        assert float('-inf') < biogrid_id < 1e7
-
-        for node in component:
-            result[node] = 'YAPID' + str(biogrid_id).zfill(7)
+            result[node] = 'YAPID' + str(i).zfill(7)
     result = pd.Series(result)
+
+    n_components = result.nunique()
+    print(f'Build YAPID graph: {len(result)} ids, {n_components} components')
 
     return result
 
