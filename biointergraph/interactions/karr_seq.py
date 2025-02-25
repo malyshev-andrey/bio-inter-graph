@@ -186,7 +186,7 @@ def load_karr_seq_data(pvalue: float|None):
         data,
         data.rename(columns=swap)
     ])
-    data = data[data['yagid1'] < [data['yagid2']]
+    data = data[data['yagid1'] < data['yagid2']]
 
     data = data.drop_duplicates()
 
