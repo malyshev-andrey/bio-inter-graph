@@ -115,8 +115,8 @@ def load_ric_seq_data(pvalue: float|None = None, **kwargs) -> pd.DataFrame:
     result['yagid1'] = id2yagid(result['gene_id1'])
     result['yagid2'] = id2yagid(result['gene_id2'])
     assert (
-        data['yagid1'].str.startswith('YAGID').all() and
-        data['yagid2'].str.startswith('YAGID').all()
+        result['yagid1'].str.startswith('YAGID').all() and
+        result['yagid2'].str.startswith('YAGID').all()
     )
 
     ids = ['yagid1', 'yagid2']
