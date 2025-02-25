@@ -2,13 +2,13 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 from ..annotations import load_extended_annotation
-from ..shared import memory
+from ..shared import memory, CHUNKSIZE
 from ..ids_mapping import id2yagid
 
 
 def _ricseq_loader(
         id, *,
-        chunksize: int|None = None,
+        chunksize: int|None = CHUNKSIZE,
         pvalue: float|None = None
     ) -> pd.DataFrame:
     url = f'https://drive.usercontent.google.com/download?id={id}&export=download&confirm=t'
@@ -85,8 +85,10 @@ def _load_ricpipe(**kwargs) -> pd.DataFrame:
 
 
 @memory.cache
-def load_ric_seq_data(p_value: float, **kwargs) -> pd.DataFrame:
+def load_ric_seq_data(pvalue: float|None, **kwargs) -> pd.DataFrame:
     columns = ['gene_id1', 'gene_id2', 'p_adj']
+    if pvalue is not None:
+        kwargs['p_value'] = pvalue
 
     extended_ricseqlib = _load_extended_ricseqlib(**kwargs)[columns]
     extended_ricseqlib['pipeline'] = 'RICseqlib'
@@ -106,7 +108,11 @@ def load_ric_seq_data(p_value: float, **kwargs) -> pd.DataFrame:
         ricpipe
     ])
 
-    result = result[result['p_adj'].astype('float') < p_value]
+    if pvalue is not None:
+        result = result[result['p_adj'].astype('float') < pvalue]
+        assert not result['p_adj'].isna().any()
+
+    print(result.groupby(['pipeline', 'annotation']).size())
     result['yagid1'] = id2yagid(result['gene_id1'])
     result['yagid2'] = id2yagid(result['gene_id2'])
 
