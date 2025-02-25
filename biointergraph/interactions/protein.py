@@ -2,6 +2,7 @@ import tempfile
 import zipfile
 from typing import Callable
 
+import requests
 import pandas as pd
 from tqdm.auto import tqdm
 
