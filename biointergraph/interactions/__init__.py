@@ -2,7 +2,7 @@ from .main import summarize_pairwise
 from .karr_seq import load_karr_seq_data
 from .ric_seq import load_ric_seq_data
 from .ENCODE import load_encode_metadata, encode_eCLIP2pairwise
-from .protein import load_string_interactions, load_biogrid_interactions
+from .protein import load_string_interactions, load_biogrid_interactions, load_IntAct_interactions
 
 
 __all__ = [
@@ -10,5 +10,7 @@ __all__ = [
     'load_karr_seq_data',
     'load_ric_seq_data',
     'load_encode_metadata', 'encode_eCLIP2pairwise',
-    'load_string_interactions', 'load_biogrid_interactions'
+    'load_string_interactions',
+    'load_biogrid_interactions',
+    'load_IntAct_interactions'
 ]
