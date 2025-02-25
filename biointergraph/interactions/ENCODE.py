@@ -8,6 +8,7 @@ from .main import summarize_pairwise
 from ..shared import memory, BED_COLUMNS
 from ..annotations import load_refseq_bed, load_gencode_bed, sanitize_bed, bed_intersect
 from ..ids import drop_id_version
+from ..ids_mapping import id2yapid, id2yagid
 
 
 def load_encode_metadata(*, cell_line: str|None = None, assay: str, **kwargs) -> pd.DataFrame:
@@ -117,7 +118,12 @@ def _load_encode_eCLIP(assembly: str, cell_line: str|None = None) -> pd.DataFram
 
 
 @memory.cache
-def encode_eCLIP2pairwise(assembly: str, annotation: str, cell_line: str|None = None) -> pd.DataFrame:
+def encode_eCLIP2pairwise(
+        assembly: str,
+        annotation: str,
+        cell_line: str|None = None,
+        pvalue: float|None = None
+    ) -> pd.DataFrame:
     eCLIP_bed = _load_encode_eCLIP(assembly=assembly, cell_line=cell_line)
     annotation_bed = {
         'gencode': load_gencode_bed,
@@ -143,5 +149,17 @@ def encode_eCLIP2pairwise(assembly: str, annotation: str, cell_line: str|None = 
     result['name2'] = drop_id_version(result['name2'])
 
     result = summarize_pairwise(result[['name1', 'name2']], symmetrize=False)
+
+    if pvalue is not None:
+        result = result[result['pvalue'] < pvalue]
+
+    result['yapid'] = id2yapid('SYMBOL:' + result['name1'])
+    result['yagid'] = id2yagid(result['name2'])
+    assert (
+        result['yapid'].str.startswith('YAPID').all() and
+        result['yagid'].str.startswith('YAGID').all()
+    )
+    result = result[['yapid', 'yagid']]
+    result = result.drop_duplicates()
 
     return result
