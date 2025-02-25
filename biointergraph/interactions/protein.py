@@ -21,6 +21,10 @@ def load_biogrid_interactions() -> pd.DataFrame:
 
     result['yapid1'] = id2yapid(result['BioGRID ID Interactor A'])
     result['yapid2'] = id2yapid(result['BioGRID ID Interactor B'])
+    assert (
+        result['yapid1'].str.startswith('YAPID').all() and
+        result['yapid2'].str.startswith('YAPID').all()
+    )
 
     ids = ['yapid1', 'yapid2']
     result = result[ids]

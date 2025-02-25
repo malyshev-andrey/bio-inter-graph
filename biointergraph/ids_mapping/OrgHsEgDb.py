@@ -27,7 +27,7 @@ def _load_OrgHsEgDb(query_func):
 
 
 @memory.cache
-def load_OrgHsEgDb_pairwise(id1_type, id2_type):
+def load_OrgHsEgDb_pairwise(id1_type: str, id2_type: str) -> pd.DataFrame:
     def query_func(conn) -> pd.DataFrame:
         def load_table(id_type: str) -> pd.DataFrame:
             aliases = {
@@ -71,3 +71,22 @@ def load_OrgHsEgDb_pairwise(id1_type, id2_type):
     result = _load_OrgHsEgDb(query_func)
     print(f'OrgHsEgDb query ({id1_type}, {id2_type}) result: {result.shape}')
     return result
+
+
+@memory.cache
+def entrezgene_id2go() -> pd.DataFrame:
+    def query_func(conn):
+        query = """
+            SELECT gene_id, go_id, "bp" as category FROM genes INNER JOIN go_bp USING(_id)
+        UNION ALL
+            SELECT gene_id, go_id, "mf" as category FROM genes INNER JOIN go_mf USING(_id)
+        UNION ALL
+            SELECT gene_id, go_id, "cc" as category FROM genes INNER JOIN go_cc USING(_id)
+        """
+        result = pd.read_sql_query(query, conn, dtype='str')
+
+        result = result.drop_duplicates()
+
+        return result
+
+    return _load_OrgHsEgDb(query_func)

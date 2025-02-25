@@ -31,4 +31,8 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
+    package_data={
+        'bio-inter-graph': ['../static/*']  # Adjust to your static files path
+    },
+    include_package_data=True
 )

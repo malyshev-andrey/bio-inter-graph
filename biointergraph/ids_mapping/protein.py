@@ -1,3 +1,5 @@
+import pkg_resources
+
 import numpy as np
 import pandas as pd
 import networkx as nx
@@ -6,7 +8,11 @@ from ..shared import REBUILD_YAPID_MAPPING
 
 def _build_yapid_graph():
     if not REBUILD_YAPID_MAPPING:
-        result = pd.read_json('id2yapid.json', typ='series')
+        filepath = pkg_resources.resource_filename(
+            'bio-inter-graph',
+            'static/id2yapid.json'
+        )
+        result = pd.read_json(filepath, typ='series')
         return result
 
     read_csv_kwargs = dict(sep='\t', skiprows=27, dtype='str')

@@ -1,5 +1,6 @@
 from itertools import combinations
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import pkg_resources
 
 import pandas as pd
 import networkx as nx
@@ -14,7 +15,11 @@ from ..shared import ID_TYPES, REBUILD_YAGID_MAPPING
 
 def _build_yagid_graph() -> pd.Series:
     if not REBUILD_YAGID_MAPPING:
-        result = pd.read_json('id2yagid.json', typ='series')
+        filepath = pkg_resources.resource_filename(
+            'bio-inter-graph',
+            'static/id2yagid.json'
+        )
+        result = pd.read_json(filepath, typ='series')
         return result
 
 
