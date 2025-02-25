@@ -73,6 +73,7 @@ def load_string_interactions() -> pd.DataFrame:
     return result
 
 
+@memory.cache
 def load_IntAct_interactions(
         filter_func: Callable[[pd.DataFrame], pd.DataFrame]|None = None
     ) -> pd.DataFrame:
