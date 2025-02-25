@@ -43,12 +43,8 @@ def _load_extended_ricseqlib(**kwargs) -> pd.DataFrame:
     result['gene_id1'] = result['gene_id1'].str.replace(' ', '__')
     result['gene_id2'] = result['gene_id2'].str.replace(' ', '__')
 
-    annotation = load_extended_annotation(
-        names=[
-            'seqid', 'start', 'end', 'gene_name',
-            'gene_type', 'strand', 'source', 'gene_id'
-        ]
-    ).drop('source', axis='columns')
+    annotation = load_extended_annotation()
+    annotation = annotation.drop('source', axis='columns')
 
     map1 = {c: f'{c}1' for c in annotation.columns}
     map2 = {c: f'{c}2' for c in annotation.columns}
