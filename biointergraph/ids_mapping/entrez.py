@@ -9,7 +9,7 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 from ..shared import memory, GFF_COLUMNS
-from ..interactions.karr_seq import _retrieve_karr_seq_metadata, _load_single_karr_seq
+from ..interactions.karr_seq_shared import _retrieve_karr_seq_metadata, _load_single_karr_seq
 from ..ids import drop_id_version
 
 
