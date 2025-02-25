@@ -2,6 +2,8 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 from ..annotations import load_extended_annotation
+from ..shared import memory
+from ..ids_mapping import id2yagid
 
 
 def _ricseq_loader(
@@ -82,7 +84,8 @@ def _load_ricpipe(**kwargs) -> pd.DataFrame:
     return result
 
 
-def load_ric_seq_data(**kwargs) -> pd.DataFrame:
+@memory.cache
+def load_ric_seq_data(p_value: float, **kwargs) -> pd.DataFrame:
     columns = ['gene_id1', 'gene_id2', 'p_adj']
 
     extended_ricseqlib = _load_extended_ricseqlib(**kwargs)[columns]
@@ -102,5 +105,12 @@ def load_ric_seq_data(**kwargs) -> pd.DataFrame:
         gencode44_ricseqlib,
         ricpipe
     ])
+
+    result = result[result['p_adj'].astype('float') < p_value]
+    result['yagid1'] = id2yagid(result['gene_id1'])
+    result['yagid2'] = id2yagid(result['gene_id2'])
+
+    result = result[['yagid1', 'yagid2']]
+    result = result.drop_duplicates()
 
     return result

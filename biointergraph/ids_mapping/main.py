@@ -11,6 +11,7 @@ from .OrgHsEgDb import load_OrgHsEgDb_pairwise
 from .entrez import karr_seq_ids2entrezgene_id
 from ..annotations import extended_gene_id2ensembl_gene_id, load_extended_annotation
 from ..shared import ID_TYPES, REBUILD_YAGID_MAPPING
+from ..ids import drop_id_version
 
 
 def _build_yagid_graph() -> pd.Series:
@@ -70,5 +71,6 @@ def _build_yagid_graph() -> pd.Series:
 
 def id2yagid(ids: pd.Series) -> pd.Series:
     mapping = _build_yagid_graph()
+    ids = drop_id_version(ids)
     ids = ids.map(mapping).combine_first(ids)
     return ids
