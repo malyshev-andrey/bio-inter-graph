@@ -88,7 +88,7 @@ def _load_ricpipe(**kwargs) -> pd.DataFrame:
 def load_ric_seq_data(pvalue: float|None, **kwargs) -> pd.DataFrame:
     columns = ['gene_id1', 'gene_id2', 'p_adj']
     if pvalue is not None:
-        kwargs['p_value'] = pvalue
+        kwargs['pvalue'] = pvalue
 
     extended_ricseqlib = _load_extended_ricseqlib(**kwargs)[columns]
     extended_ricseqlib['pipeline'] = 'RICseqlib'
