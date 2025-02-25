@@ -114,7 +114,14 @@ def load_ric_seq_data(pvalue: float|None, **kwargs) -> pd.DataFrame:
     result['yagid1'] = id2yagid(result['gene_id1'])
     result['yagid2'] = id2yagid(result['gene_id2'])
 
-    result = result[['yagid1', 'yagid2']]
+    ids = ['yagid1', 'yagid2']
+    result = result[ids]
+    swap = dict(zip(ids, ids[::-1]))
+    result = pd.concat([
+        result,
+        result.rename(columns=swap)
+    ])
+    result = result[result['yagid1'] < result['yagid2']]
     result = result.drop_duplicates()
 
     return result
