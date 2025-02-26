@@ -71,10 +71,10 @@ def describe_graph(graph):
     print(f'Diameter: {min(diameter_sample)}-{max(diameter_sample)}')
 
 
-def _community2enrichment(nodes: list[str]) -> str:
+def _community2enrichment(nodes: list[str]) -> tuple[str, float]:
     nodes = [n for n in nodes if n.startswith('YAPID')]
     if not nodes:
-        return ''
+        return '', 1
 
     id2yapid = _build_yapid_graph()
     ids = pd.Series(id2yapid[id2yapid.isin(nodes)].index)
@@ -92,14 +92,14 @@ def _community2enrichment(nodes: list[str]) -> str:
     result = pd.DataFrame(response.json()['result'])
 
     if result.shape[0] == 0:
-        return ''
+        return '', 1
 
-    result = result.loc[0, 'name']
-    return result
+    result = result.iloc[0]
+    return result['name'], result['p_value']
 
 
 def detect_communities(graph) -> pd.DataFrame:
-    communities = nx.community.louvain_communities(graph, resolution=2)
+    communities = nx.community.louvain_communities(graph, resolution=2, seed=42)
     result = []
     for community in communities:
         community = list(community)
@@ -111,7 +111,9 @@ def detect_communities(graph) -> pd.DataFrame:
     result = pd.DataFrame(result)
 
     tqdm.pandas()
-    result['go_term'] = result['nodes'].progress_apply(_community2enrichment)
+    go_terms = result['nodes'].progress_apply(_community2enrichment)
+    go_terms = go_terms.tolist()
+    result[['go_term', 'p_value']] = pd.DataFrame(go_terms)
 
     return result
 
