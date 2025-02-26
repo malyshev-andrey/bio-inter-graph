@@ -62,7 +62,8 @@ def describe_graph(graph):
     print(f'Nodes: {graph.number_of_nodes()}')
     print(f'Edges: {graph.number_of_edges()}')
     print('Degrees distribution:')
-    print(pd.Series(dict(graph.degree())).describe())
+    stats = pd.Series(dict(graph.degree())).describe()
+    print('\t' + str(stats[:10]).replace('\n', '\n\t'))
     diameter_sample = [nx.approximation.diameter(graph) for _ in range(10)]
     print(f'Diameter: {min(diameter_sample)}-{max(diameter_sample)}')
 
