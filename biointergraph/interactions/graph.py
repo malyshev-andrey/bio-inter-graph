@@ -1,11 +1,14 @@
+import requests
 import pandas as pd
 import networkx as nx
+from tqdm.auto import tqdm
 
 from .ENCODE import encode_eCLIP2pairwise
 from .karr_seq import load_karr_seq_data
 from .ric_seq import load_ric_seq_data
 from .protein import load_IntAct_interactions, load_biogrid_interactions, load_string_interactions
 from ..shared import memory
+from ..ids_mapping.protein import _build_yapid_graph
 
 
 def _remove_minor_components(graph):
@@ -68,6 +71,33 @@ def describe_graph(graph):
     print(f'Diameter: {min(diameter_sample)}-{max(diameter_sample)}')
 
 
+def _community2enrichment(nodes: list[str]) -> str:
+    nodes = [n for n in nodes if n.startswith('YAPID')]
+    if not nodes:
+        return ''
+
+    id2yapid = _build_yapid_graph()
+    ids = pd.Series(id2yapid[id2yapid.isin(nodes)].index)
+    ids = ids.str.removeprefix('SYMBOL:')
+
+    response = requests.post(
+        url = 'https://biit.cs.ut.ee/gprofiler/api/gost/profile/',
+        json = {
+            'organism': 'hsapiens',
+            'query': ids.tolist(),
+            'sources': ['GO'],
+            'numeric_ns': 'BIOGRID'
+        }
+    )
+    result = pd.DataFrame(response.json()['result'])
+
+    if result.shape[0] == 0:
+        return ''
+
+    result = result.loc[0, 'name']
+    return result
+
+
 def detect_communities(graph) -> pd.DataFrame:
     communities = nx.community.louvain_communities(graph, resolution=2)
     result = []
@@ -79,6 +109,9 @@ def detect_communities(graph) -> pd.DataFrame:
             'protein_frac': pd.Series(community).str.startswith('YAPID').mean()
         })
     result = pd.DataFrame(result)
+
+    tqdm.pandas()
+    result['go_term'] = result['nodes'].progress_apply(_community2enrichment)
 
     return result
 
