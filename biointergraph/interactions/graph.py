@@ -80,3 +80,10 @@ def detect_communities(graph) -> pd.DataFrame:
     result = pd.DataFrame(result)
 
     return result
+
+
+def describe_nodes(graph) -> pd.DataFrame:
+    result = pd.DataFrame(graph.degree(), columns=['node', 'degree'])
+    assert result['node'].str.match(r'^YA[GP]ID\d{7}$').all()
+    result['is_protein'] = result['node'].str.startswith('YAPID')
+    return result
