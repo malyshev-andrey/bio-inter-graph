@@ -1,6 +1,7 @@
 from typing import Callable
 
 import requests
+from requests.exceptions import HTTPError
 import pandas as pd
 from tqdm.auto import tqdm
 
@@ -11,7 +12,13 @@ def _retrieve_ucsc_schema(table, assembly: str = 'hg38') -> list[str]:
     assert assembly in ['hg19', 'hg38']
     url = f'https://api.genome.ucsc.edu/list/schema?genome={assembly};track={table}'
     response = requests.get(url)
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except HTTPError:
+        if table == 'chromAlias':
+            return ['alias', 'chrom', 'source']
+        else:
+            raise
     response = response.json()
     assert 'columnTypes' in response, f'Failed to retrieve schema from {url}'
     response = response['columnTypes']
