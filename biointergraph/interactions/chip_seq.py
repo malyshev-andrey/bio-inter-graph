@@ -4,6 +4,7 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 from ..annotations import bed_merge, sanitize_bed
+from ..shared import memory, BED_COLUMNS
 
 
 def _load_encode_ChIP_seq_metadata(cell_line: str|None = None) -> pd.DataFrame:
@@ -41,6 +42,7 @@ def _load_encode_ChIP_seq_metadata(cell_line: str|None = None) -> pd.DataFrame:
     return metadata
 
 
+@memory.cache
 def load_encode_ChIP_seq_peaks(cell_line: str|None = None) -> pd.DataFrame:
     metadata = _load_encode_ChIP_seq_metadata(cell_line)
 
