@@ -6,7 +6,6 @@ from tqdm.auto import tqdm
 from ..annotations import bed_merge, bed_intersect, sanitize_bed, load_ChromHMM_annotation
 from ..ids_mapping import id2yapid
 from ..shared import memory, BED_COLUMNS
-from mypyc.ir.ops import Return
 
 
 def _load_encode_ChIP_seq_metadata(cell_line: str|None = None) -> pd.DataFrame:
