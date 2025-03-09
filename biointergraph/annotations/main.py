@@ -155,12 +155,14 @@ def read_feature_table(
     return result
 
 
-def sanitize_bed(df: pd.DataFrame) -> pd.DataFrame:
+def sanitize_bed(df: pd.DataFrame, *, stranded: bool = True) -> pd.DataFrame:
     assert df['start'].str.isdigit().all()
     df['start'] = df['start'].astype('int')
 
     assert df['end'].str.isdigit().all()
     df['end'] = df['end'].astype('int')
 
-    assert df['strand'].isin({'+', '-'}).all()
+    strand_values = {'+', '-'} if stranded else {'+', '-', '.'}
+    assert df['strand'].isin(strand_values).all()
+
     return df

@@ -59,7 +59,7 @@ def load_encode_ChIP_seq_peaks(cell_line: str|None = None) -> pd.DataFrame:
             result.append(bed)
             progress_bar.update(bed.shape[0])
     result = pd.concat(result)
-    result = sanitize_bed(result)
+    result = sanitize_bed(result, stranded=False)
 
     result = bed_merge(result, by='Name')
     result['score'], result['strand'] = 1000, '.'
