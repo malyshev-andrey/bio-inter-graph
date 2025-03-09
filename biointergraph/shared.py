@@ -18,6 +18,8 @@ ID_TYPES = [
     'refseq_transcript_id'
 ]
 
+GOOGLE_DRIVE_URL = 'https://drive.usercontent.google.com/download?id={id}&export=download&confirm=t'
+
 CHUNKSIZE = 10000
 
 
