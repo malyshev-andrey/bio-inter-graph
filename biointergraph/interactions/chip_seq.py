@@ -6,6 +6,7 @@ from tqdm.auto import tqdm
 from ..annotations import bed_merge, bed_intersect, sanitize_bed, load_ChromHMM_annotation
 from ..ids_mapping import id2yapid
 from ..shared import memory, BED_COLUMNS
+from mypyc.ir.ops import Return
 
 
 def _load_encode_ChIP_seq_metadata(cell_line: str|None = None) -> pd.DataFrame:
@@ -71,20 +72,31 @@ def load_encode_chip_seq_peaks(cell_line: str|None = None) -> pd.DataFrame:
 @memory.cache
 def load_chip_seq_data() -> pd.DataFrame:
     peaks = load_encode_chip_seq_peaks('K562')
-    ChromHMM = load_ChromHMM_annotation()
+
     peaks['name'] = id2yapid('SYMBOL:' + peaks['name'])
     mapped = peaks['name'].str.startswith('YAPID')
     unmapped = peaks[~mapped]['name'].unique()
     print('ChIP-seq data unmapped protein symbols:', *unmapped)
     print(f'Invalid peaks frac: {1-mapped.mean():.04f}')
-
     peaks = peaks[mapped]
-    result = bed_intersect(ChromHMM, peaks, strandedness=None, unify_chr_assembly='hg38', jaccard=True)
-    peak_id = ['chr', 'start2', 'end2', 'name2']
+
+    result = bed_intersect(
+        peaks, load_ChromHMM_annotation()[['chr', 'start', 'end', 'name']],
+        strandedness=None,
+        unify_chr_assembly='hg38',
+        jaccard=True,
+        how='left'
+    )
+    result = result.rename(columns={'name1': 'yapid', 'name2': 'yalid'})
+    no_intersections = result['yalid'].eq('-1')
+    print(f'Peaks without intersections: {no_intersections.sum()}')
+
+    result = result[~no_intersections]
+
+    peak_id = ['chr', 'start1', 'end1', 'yapid']
     result = result.sort_values('jaccard', ascending=False)
     result = result.drop_duplicates(peak_id, keep='first')
 
-    result = result[['name1', 'name2']].drop_duplicates()
-    result = result.rename(columns={'name1': 'yalid', 'name2': 'yapid'})
+    result = result[['yapid', 'yalid']].drop_duplicates()
 
     return result
