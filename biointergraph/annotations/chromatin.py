@@ -2,6 +2,7 @@ import pandas as pd
 
 from ..shared import memory, BED_COLUMNS
 from .main import sanitize_bed
+from .intersect import bed_intersect
 
 
 def _collapse_SPIN_states(states: pd.Series) -> pd.Series:
@@ -80,7 +81,7 @@ def load_ChromHMM_annotation(**kwargs):
     n = result.shape[0]
 
     SPIN = _load_SPIN_annotation()
-    result = ba.bed_intersect(
+    result = bed_intersect(
         result, SPIN,
         strandedness=None,
         unify_chr_assembly='hg38',
