@@ -73,7 +73,7 @@ def load_chip_seq_data() -> pd.DataFrame:
     ChromHMM = load_ChromHMM_annotation()
     peaks['name'] = id2yapid('SYMBOL:' + peaks['name'])
     mapped = peaks['name'].str.startswith('YAPID')
-    unmapped = peaks[~mapped].unique()
+    unmapped = peaks[~mapped]['name'].unique()
     print('ChIP-seq data unmapped protein symbols:', *unmapped)
     print(f'Invalid peaks frac: {1-mapped.mean():.04f}')
 
