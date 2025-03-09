@@ -3,7 +3,8 @@ from urllib.parse import urlencode
 import pandas as pd
 from tqdm.auto import tqdm
 
-from ..annotations import bed_merge, sanitize_bed
+from ..annotations import bed_merge, bed_intersect, sanitize_bed, load_ChromHMM_annotation
+from ..ids_mapping import id2yapid
 from ..shared import memory, BED_COLUMNS
 
 
@@ -43,7 +44,7 @@ def _load_encode_ChIP_seq_metadata(cell_line: str|None = None) -> pd.DataFrame:
 
 
 @memory.cache
-def load_encode_ChIP_seq_peaks(cell_line: str|None = None) -> pd.DataFrame:
+def load_encode_chip_seq_peaks(cell_line: str|None = None) -> pd.DataFrame:
     metadata = _load_encode_ChIP_seq_metadata(cell_line)
 
     result = []
@@ -64,4 +65,20 @@ def load_encode_ChIP_seq_peaks(cell_line: str|None = None) -> pd.DataFrame:
     result = bed_merge(result, by='Name')
     result['score'], result['strand'] = 1000, '.'
 
+    return result
+
+
+def load_chip_seq_data() -> pd.DataFrame:
+    peaks = load_encode_chip_seq_peaks('K562')
+    ChromHMM = load_ChromHMM_annotation()
+    peaks['name'] = id2yapid('SYMBOL:' + peaks['name'])
+    mapped = peaks['name'].str.startswith('YAPID')
+    unmapped = peaks[~mapped].unique()
+    print('ChIP-seq data unmapped protein symbols:', *unmapped)
+    print(f'Invalid peaks frac: {1-mapped.mean():.04f}')
+
+    peaks = peaks[mapped]
+    result = bed_intersect(ChromHMM, peaks, strandedness=None, unify_chr_assembly='hg38', jaccard=True)
+    peak_id = ['chr', 'start2', 'end2', 'name2']
+    result = result.sort_values('jaccard').drop_duplicates(peak_id)['jaccard'].describe()
     return result
