@@ -83,4 +83,8 @@ def load_chip_seq_data() -> pd.DataFrame:
     peak_id = ['chr', 'start2', 'end2', 'name2']
     result = result.sort_values('jaccard', ascending=False)
     result = result.drop_duplicates(peak_id, keep='first')
+
+    result = result[['name1', 'name2']].drop_duplicates()
+    result = result.rename(columns={'name1': 'yalid', 'name2': 'yapid'})
+
     return result
