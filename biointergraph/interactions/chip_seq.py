@@ -68,6 +68,7 @@ def load_encode_chip_seq_peaks(cell_line: str|None = None) -> pd.DataFrame:
     return result
 
 
+@memory.cache
 def load_chip_seq_data() -> pd.DataFrame:
     peaks = load_encode_chip_seq_peaks('K562')
     ChromHMM = load_ChromHMM_annotation()
@@ -80,5 +81,6 @@ def load_chip_seq_data() -> pd.DataFrame:
     peaks = peaks[mapped]
     result = bed_intersect(ChromHMM, peaks, strandedness=None, unify_chr_assembly='hg38', jaccard=True)
     peak_id = ['chr', 'start2', 'end2', 'name2']
-    result = result.sort_values('jaccard').drop_duplicates(peak_id)['jaccard'].describe()
+    result = result.sort_values('jaccard', ascending=False)
+    result = result.drop_duplicates(peak_id, keep='first')
     return result
