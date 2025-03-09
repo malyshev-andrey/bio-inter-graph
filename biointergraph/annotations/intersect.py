@@ -5,6 +5,13 @@ import pyranges as pr
 from .ucsc import unify_chr
 
 
+BED2RANGES = {
+    'chr': 'Chromosome', 'start': 'Start', 'end': 'End',
+    'name': 'Name', 'score': 'Score', 'strand': 'Strand'
+}
+RANGES2BED = {value: key for key, value in BED2RANGES.items()}
+
+
 def _bed2ranges(bed: pd.DataFrame) -> pr.PyRanges:
     """
     Converts a BED-like pandas DataFrame to a PyRanges object.
@@ -23,13 +30,9 @@ def _bed2ranges(bed: pd.DataFrame) -> pr.PyRanges:
     Returns:
         pr.PyRanges: A PyRanges object representing the input intervals.
     """
-
-    names_map = {
-        'chr': 'Chromosome', 'start': 'Start', 'end': 'End',
-        'name': 'Name', 'score': 'Score', 'strand': 'Strand'
-    }
-
-    return pr.PyRanges(bed.rename(columns=names_map))
+    result = bed.rename(columns=BED2RANGES)
+    result = pr.PyRanges(result)
+    return result
 
 
 def bed_intersect(
@@ -100,4 +103,13 @@ def bed_intersect(
         assert (result['Overlap'] == intersect).all()
         result['jaccard'] = intersect / union
 
+    return result
+
+
+def bed_merge(bed: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    result = _bed2ranges(bed)
+
+    result = result.merge(**kwargs)
+
+    result = result.df.rename(columns=RANGES2BED)
     return result
