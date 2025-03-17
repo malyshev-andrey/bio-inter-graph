@@ -1,10 +1,11 @@
 import pandas as pd
 
-from ..shared import GOOGLE_DRIVE_URL
+from ..shared import GOOGLE_DRIVE_URL, memory
 from ..annotations import load_extended_annotation, bed_intersect, load_ChromHMM_annotation
 from ..ids_mapping import id2yagid
 
 
+@memory.cache
 def load_rna_chrom_data(**kwargs) -> pd.DataFrame:
     url = GOOGLE_DRIVE_URL.format(id='1nkg0Iofz8azz6BEfISWXG_DNQMlHEbi6')
     default_kwargs = dict(sep='\t', compression='zip', dtype='str')

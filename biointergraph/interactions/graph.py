@@ -7,6 +7,8 @@ from .ENCODE import encode_eCLIP2pairwise
 from .karr_seq import load_karr_seq_data
 from .ric_seq import load_ric_seq_data
 from .protein import load_IntAct_interactions, load_biogrid_interactions, load_string_interactions
+from .chip_seq import load_chip_seq_data
+from .rna_chrom import load_rna_chrom_data
 from ..shared import memory
 from ..ids_mapping.protein import _build_yapid_graph
 
@@ -34,12 +36,14 @@ def _remove_minor_components(graph):
 @memory.cache
 def build_main_graph():
     data = [
-        encode_eCLIP2pairwise(assembly='hg38', annotation='gencode', pvalue=0.05),
+        encode_eCLIP2pairwise(assembly='hg38', annotation='gencode', pvalue=1),
         load_ric_seq_data(0.05),
         load_karr_seq_data(0.05),
         load_IntAct_interactions(),
         load_biogrid_interactions(),
-        load_string_interactions()
+        load_string_interactions(),
+        load_chip_seq_data(),
+        load_rna_chrom_data()
     ]
 
     for df in data:
