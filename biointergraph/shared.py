@@ -18,6 +18,11 @@ ID_TYPES = [
     'refseq_transcript_id'
 ]
 
+UNIFY_BIOTYPES = {
+    'protein-coding': 'mRNA',
+    'pseudo': 'pseudogene'
+}
+
 GOOGLE_DRIVE_URL = 'https://drive.usercontent.google.com/download?id={id}&export=download&confirm=t'
 
 CHUNKSIZE = 10000
