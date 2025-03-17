@@ -5,7 +5,7 @@ from ..annotations import read_feature_table, unify_chr
 from .entrez import entrezgene_id2biotype
 
 
-def expand_attributes(ft: pd.DataFrame) -> pd.DataFrame:
+def _expand_attributes(ft: pd.DataFrame) -> pd.DataFrame:
     n = ft.shape[0]
     result = ft['attributes'].str.split(';')
     result = result.explode()
@@ -27,7 +27,7 @@ def refseq_transcript_id_info(**kwargs) -> pd.DataFrame:
     result = read_feature_table(url, filter_func=type_filter) if CACHE is None else CACHE
     CACHE = result
 
-    result = expand_attributes(result)
+    result = _expand_attributes(result)
     regex = r'^rna-(?P<accession>N[MR]_\d+)\.(?P<version>\d+)(?:-(?P<subversion>\d+))?$'
     result = result[result['ID'].str.match(regex)]
     result = pd.concat([result, result['ID'].str.extract(regex)], axis='columns')
