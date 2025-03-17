@@ -72,8 +72,9 @@ def _build_yagid_graph() -> pd.Series:
     return result
 
 
-def id2yagid(ids: pd.Series) -> pd.Series:
-    mapping = _build_yagid_graph()
-    ids = drop_id_version(ids)
-    ids = ids.map(mapping).combine_first(ids)
-    return ids
+def id2yagid(ids: pd.Series|None = None) -> pd.Series:
+    result = _build_yagid_graph()
+    if ids is not None:
+        ids = drop_id_version(ids)
+        result = ids.map(result).combine_first(ids)
+    return result
