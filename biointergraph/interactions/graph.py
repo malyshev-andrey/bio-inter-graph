@@ -52,7 +52,7 @@ def build_main_graph():
 
     data = pd.concat(data)
     assert data.shape[1] == 2
-    regex = r'^YA[PG]ID\d{7}$'
+    regex = r'^YA[LPG]ID\d{7}$'
     assert (
         data['source'].str.match(regex).all() and
         data['target'].str.match(regex).all()
