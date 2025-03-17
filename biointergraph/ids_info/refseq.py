@@ -18,14 +18,12 @@ def _expand_attributes(ft: pd.DataFrame) -> pd.DataFrame:
 
 @memory.cache
 def refseq_transcript_id_info(**kwargs) -> pd.DataFrame:
-    global CACHE
     url = 'https://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/historical/GRCh38/GCF_000001405.40-RS_2024_08_historical/GCF_000001405.40-RS_2024_08_genomic.gff.gz'
     type_filter = lambda df: df[~df['type'].isin({
         'gene', 'pseudogene',
         'exon', 'CDS'
     })]
-    result = read_feature_table(url, filter_func=type_filter) if CACHE is None else CACHE
-    CACHE = result
+    result = read_feature_table(url, filter_func=type_filter)
 
     result = _expand_attributes(result)
     regex = r'^rna-(?P<accession>N[MR]_\d+)\.(?P<version>\d+)(?:-(?P<subversion>\d+))?$'
