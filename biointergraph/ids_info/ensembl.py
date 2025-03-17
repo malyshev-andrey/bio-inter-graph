@@ -6,6 +6,7 @@ import requests
 import pandas as pd
 
 from ..annotations import unify_chr
+from ..shared import UNIFY_BIOTYPES, memory
 
 DOMAIN = 'ftp.ensembl.org'
 
@@ -99,6 +100,7 @@ def fetch_ensembl_table(table: str, *, release: str|None = None) -> pd.DataFrame
     return result
 
 
+@memory.cache
 def ensembl_transcript_id_info(release: str|None = None) -> pd.DataFrame:
     result = fetch_ensembl_table('transcript', release=release)
     chr_names = fetch_ensembl_table('seq_region', release=release)
@@ -123,6 +125,7 @@ def ensembl_transcript_id_info(release: str|None = None) -> pd.DataFrame:
     return result
 
 
+@memory.cache
 def ensembl_gene_id_info(release: str|None = None) -> pd.DataFrame:
     result = fetch_ensembl_table('gene', release=release)
     chr_names = fetch_ensembl_table('seq_region', release=release)
@@ -143,4 +146,36 @@ def ensembl_gene_id_info(release: str|None = None) -> pd.DataFrame:
     result['chr'] = unify_chr(result['chr'], assembly='hg38')
     assert result['chr'].eq('chrM').any() and not result['chr'].eq('chrMT').any()
 
+    return result
+
+
+def _unify_ensembl_biotypes(biotypes: pd.Series) -> pd.Series:
+    biotypes = biotypes.where(
+        ~biotypes.str.contains('pseudogene'),
+        'pseudogene'
+    )
+    biotypes = biotypes.replace('protein_coding_CDS_not_defined', 'mRNA')
+    biotypes = biotypes.replace(UNIFY_BIOTYPES)
+    return biotypes
+
+
+def ensembl_gene_id2biotype(ids: pd.Series|None = None) -> pd.Series:
+    result = ensembl_gene_id_info()
+    result = result.set_index('ensembl_gene_id', verify_integrity=True)
+    result = result['biotype']
+    result = _unify_ensembl_biotypes(result)
+
+    if ids is not None:
+        result = ids.map(result)
+    return result
+
+
+def ensembl_transcript_id2biotype(ids: pd.Series|None = None) -> pd.Series:
+    result = ensembl_transcript_id_info()
+    result = result.set_index('ensembl_transcript_id', verify_integrity=True)
+    result = result['biotype']
+    result = _unify_ensembl_biotypes(result)
+
+    if ids is not None:
+        result = ids.map(result)
     return result
