@@ -20,7 +20,8 @@ ID_TYPES = [
 
 UNIFY_BIOTYPES = {
     'protein-coding': 'mRNA',
-    'pseudo': 'pseudogene'
+    'pseudo': 'pseudogene',
+    'lnc_RNA': 'lncRNA'
 }
 
 GOOGLE_DRIVE_URL = 'https://drive.usercontent.google.com/download?id={id}&export=download&confirm=t'
