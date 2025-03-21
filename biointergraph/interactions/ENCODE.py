@@ -1,3 +1,4 @@
+from opcode import jabs_op
 from urllib.parse import urlencode
 
 import pandas as pd
@@ -129,8 +130,14 @@ def encode_eCLIP2pairwise(
     result = bed_intersect(
         eCLIP_bed,
         annotation_bed,
-        unify_chr_assembly=assembly
+        unify_chr_assembly=assembly,
+        jaccard=True,
+        how='left'
     )
+
+    no_intersect = result['start2'].eq(-1)
+    print(f'ENCODE eCLIP peaks without intersections: {no_intersect.sum()}')
+    result = result[~no_intersect]
 
     peak_id = {f'{c}1': c for c in BED_COLUMNS}
     result = result.rename(columns=peak_id)
