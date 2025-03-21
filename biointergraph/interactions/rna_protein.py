@@ -46,8 +46,9 @@ def load_postar3_data(species: str, cell_line: str, annotation: str, **kwargs) -
     print(f'POSTAR3 peaks without intersections: {no_intersect.sum()}')
     result = result[~no_intersect]
 
-    peak_id = [f'{c}1' for c in BED_COLUMNS]
+    peak_id = {f'{c}1': c for c in BED_COLUMNS}
+    result = result.rename(columns=peak_id)
     result = result.sort_values('jaccard')
-    result = result.drop_duplicates(peak_id, keep='last')
+    result = result.drop_duplicates(peak_id.values(), keep='last')
 
     return result
