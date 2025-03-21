@@ -1,6 +1,7 @@
 import pandas as pd
 
 from ..annotations import load_gencode_bed, load_refseq_bed, bed_intersect
+from ..ids_mapping import id2yapid, id2yagid
 from ..shared import _read_tsv, memory, BED_COLUMNS
 
 
@@ -50,5 +51,13 @@ def load_postar3_data(species: str, cell_line: str, annotation: str, **kwargs) -
     result = result.rename(columns=peak_id)
     result = result.sort_values('jaccard')
     result = result.drop_duplicates(peak_id.values(), keep='last')
+
+    result['yagid'] = id2yagid(result['name2'])
+    assert result['yagid'].str.startswith('YAGID').all()
+    result['yapid'] = id2yapid('SYMBOL:' + result['name'])
+    assert result['yapid'].str.startswith('YAPID').all()
+
+    result = result[['yagid', 'yapid']]
+    result = result.drop_duplicates()
 
     return result
