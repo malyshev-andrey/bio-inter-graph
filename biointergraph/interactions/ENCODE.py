@@ -1,4 +1,3 @@
-from opcode import jabs_op
 from urllib.parse import urlencode
 
 import pandas as pd
