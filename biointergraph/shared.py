@@ -32,7 +32,7 @@ UNIFY_BIOTYPES = {
 
 GOOGLE_DRIVE_URL = 'https://drive.usercontent.google.com/download?id={id}&export=download&confirm=t'
 
-CHUNKSIZE = int(1e4)
+CHUNKSIZE = 10**4
 
 
 # cache config
