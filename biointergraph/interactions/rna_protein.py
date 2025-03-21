@@ -1,6 +1,7 @@
 import pandas as pd
 
-from ..shared import _read_tsv, memory
+from ..annotations import load_gencode_bed, load_refseq_bed, bed_intersect
+from ..shared import _read_tsv, memory, BED_COLUMNS
 
 
 def _load_postar3_peaks(species: str = 'human', **kwargs) -> pd.DataFrame:
@@ -21,10 +22,32 @@ def _load_postar3_peaks(species: str = 'human', **kwargs) -> pd.DataFrame:
 
 
 @memory.cache
-def load_postar3_data(species: str, cell_line: str, **kwargs) -> pd.DataFrame:
+def load_postar3_data(species: str, cell_line: str, annotation: str, **kwargs) -> pd.DataFrame:
     result = _load_postar3_peaks(
         species=species,
         filter_func=lambda df: df[df['cell_line'].eq(cell_line)],
         **kwargs
     )
+    annotation_bed = {
+        'gencode': load_gencode_bed,
+        'refseq': load_refseq_bed
+    }[annotation](assembly='hg38', feature='gene')
+
+    result = bed_intersect(
+        result[BED_COLUMNS],
+        annotation_bed,
+        unify_chr_assembly='hg38',
+        strandedness='same',
+        jaccard=True,
+        how='left'
+    )
+
+    no_intersect = result['start2'].eq(-1)
+    print(f'POSTAR3 peaks without intersections: {no_intersect.sum()}')
+    result = result[~no_intersect]
+
+    peak_id = [f'{c}1' for c in BED_COLUMNS]
+    result = result.sort_values('jaccard')
+    result = result.drop_duplicates(peak_id, keep='last')
+
     return result
