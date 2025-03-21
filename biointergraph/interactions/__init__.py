@@ -10,7 +10,7 @@ from .protein import (
 from .graph import build_main_graph, describe_graph, detect_communities, describe_nodes
 from .chip_seq import load_encode_chip_seq_peaks, load_chip_seq_data
 from .rna_chrom import load_rna_chrom_data
-from .rna_protein import load_postar3_data
+from .rna_protein import load_postar3_data, load_frip_seq_data
 
 
 __all__ = [
@@ -24,5 +24,5 @@ __all__ = [
     'build_main_graph', 'describe_graph', 'detect_communities', 'describe_nodes',
     'load_encode_chip_seq_peaks', 'load_chip_seq_data',
     'load_rna_chrom_data',
-    'load_postar3_data'
+    'load_postar3_data', 'load_frip_seq_data'
 ]
