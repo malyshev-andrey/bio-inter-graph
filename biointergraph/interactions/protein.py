@@ -106,8 +106,15 @@ def load_IntAct_interactions() -> pd.DataFrame:
     result = result[~result['PMID'].isna()]
     assert not result['Interaction detection method(s)'].isna().any()
 
-    result['yapid1'] = id2yapid(data['#ID(s) interactor A'].str.removeprefix('uniprotkb:'))
-    result['yapid2'] = id2yapid(data['ID(s) interactor B'].str.removeprefix('uniprotkb:'))
+    for c in '#ID(s) interactor A', 'ID(s) interactor B':
+        data = data[data[c].str.startswith('uniprotkb:')]
+        data[c] = data[c].str.removeprefix('uniprotkb:')
+        data[c] = data[c].str.split('-', expand=True)[0]
+        regex = r'^([A-Z0-9]{6}|[A-Z0-9]{10})$'
+        assert data[c].str.match(regex).all()
+
+    result['yapid1'] = id2yapid(data['#ID(s) interactor A'])
+    result['yapid2'] = id2yapid(data['ID(s) interactor B'])
     result = result[
         result['yapid1'].str.startswith('YAPID') &
         result['yapid2'].str.startswith('YAPID')
