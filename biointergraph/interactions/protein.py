@@ -62,32 +62,20 @@ def load_biogrid_interactions() -> pd.DataFrame:
 
 
 @memory.cache
-def load_string_interactions() -> pd.DataFrame:
-    url = 'https://stringdb-downloads.org/download/stream/protein.physical.links.v12.0/9606.protein.physical.links.v12.0.onlyAB.tsv.gz'
-    result = pd.read_csv(url, sep='\t')
-    assert (
-        result['protein1'].str.match('^9606.ENSP\d{11}$') &
-        result['protein2'].str.match('^9606.ENSP\d{11}$')
-    ).all()
+def load_string_interactions(min_score: int = 700) -> pd.DataFrame:
+    result = _read_tsv(
+        f'https://stringdb-downloads.org/download/stream/protein.physical.links.v12.0/9606.protein.physical.links.v12.0.min{min_score}.onlyAB.tsv.gz',
+        usecols=['protein1', 'protein2']
+    )
+
+    id_regex = r'^9606.ENSP\d{11}$'
+    assert result['protein1'].str.match(id_regex).all()
+    assert result['protein2'].str.match(id_regex).all()
+
     result['protein1'] = result['protein1'].str.removeprefix('9606.')
     result['protein2'] = result['protein2'].str.removeprefix('9606.')
 
-    result['yapid1'] = id2yapid(result['protein1'])
-    result['yapid2'] = id2yapid(result['protein2'])
-    assert (
-        result['yapid1'].str.startswith('YAPID').all() and
-        result['yapid2'].str.startswith('YAPID').all()
-    )
-
-    ids = ['yapid1', 'yapid2']
-    result = result[ids]
-    swap = dict(zip(ids, ids[::-1]))
-    result = pd.concat([
-        result,
-        result.rename(columns=swap)
-    ])
-    result = result[result['yapid1'] < result['yapid2']]
-    result = result.drop_duplicates()
+    result = _to_pairwise(result['protein1'], result['protein2'])
     return result
 
 
