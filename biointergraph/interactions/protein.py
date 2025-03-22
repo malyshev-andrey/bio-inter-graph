@@ -40,10 +40,9 @@ def load_biogrid_interactions() -> pd.DataFrame:
         ]
     )
 
-    assert (
-        result['Organism Name Interactor A'].eq('Homo sapiens') &
-        result['Organism Name Interactor B'].eq('Homo sapiens')
-    ).all()
+    assert result['Organism Name Interactor A'].eq('Homo sapiens').all()
+    assert result['Organism Name Interactor B'].eq('Homo sapiens').all()
+
     assert not result['Experimental System'].str.contains('RNA').any()
     assert result['Experimental System Type'].eq('physical').all()
 
@@ -110,8 +109,7 @@ def load_intact_interactions() -> pd.DataFrame:
         result = result[result[c].str.startswith('uniprotkb:')]
         result[c] = result[c].str.removeprefix('uniprotkb:')
         result[c] = result[c].str.split('-', expand=True)[0]
-        regex = r'^([A-Z0-9]{6}|[A-Z0-9]{10})$'
-        assert result[c].str.match(regex).all()
+        assert result[c].str.match(r'^([A-Z0-9]{6}|[A-Z0-9]{10})$').all()
 
     result['yapid1'] = id2yapid(result['#ID(s) interactor A'])
     assert result['yapid1'].str.startswith('YAPID').all()

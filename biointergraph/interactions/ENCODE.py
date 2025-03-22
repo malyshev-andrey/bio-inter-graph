@@ -1,4 +1,5 @@
 from urllib.parse import urlencode
+from typing import Iterable
 
 import pandas as pd
 from tqdm.auto import tqdm
@@ -8,59 +9,34 @@ from ..annotations import load_refseq_bed, load_gencode_bed, sanitize_bed, bed_i
 from ..ids_mapping import id2yapid, id2yagid
 
 
-def load_encode_metadata(*, cell_line: str|None = None, assay: str, **kwargs) -> pd.DataFrame:
-    """
-    Loads metadata for ENCODE project files based on the specified cell line and assay.
+def load_encode_metadata(
+        assay: str|Iterable[str] = (), *,
+        entity_type: str = 'File',
+        cell_line: str|None = None,
+        released: bool = True,
+        **kwargs
+    ) -> pd.DataFrame:
 
-    This function queries the ENCODE database for metadata related to the specified assay (experimental protocol)
-    and optionally filters by a given cell line. It returns the result as a pandas DataFrame containing the metadata
-    for released files that match the query parameters.
+    params = []
+    if isinstance(assay, str):
+        assay = [assay]
+    params.extend(('assay_title', title) for title in assay)
 
-    Parameters:
-    -----------
-    cell_line : str or None, optional
-        The cell line to filter the metadata by. If None, no filtering by cell line is applied.
-
-    assay : str
-        The assay (experimental protocol) to filter the metadata by. This is a required parameter.
-
-    **kwargs : keyword arguments
-        Additional parameters to pass as filters for the ENCODE metadata query. These will be appended to the query
-        parameters in the URL (e.g., for additional filtering based on specific file types or statuses).
-
-    Returns:
-    --------
-    pd.DataFrame
-        A pandas DataFrame containing the metadata of files retrieved from the ENCODE project database, with columns
-        for file attributes such as file format, file size, and more. The dataframe will not contain fully empty columns.
-
-    Raises:
-    -------
-    AssertionError
-        If no files are found matching the query parameters, an assertion error is raised.
-
-    Example:
-    --------
-    >>> load_encode_metadata(assay="eCLIP", cell_line="K562")
-    This will return metadata for the eCLIP assays conducted on the K562 cell line.
-    """
-
-    params = {
-        'type': 'File',
-        'assay_title': assay,
-        'status': 'released'
-    }
     if cell_line is not None:
-        params['biosample_ontology.term_name'] = cell_line
-    params.update(kwargs)
+        params.append(('biosample_ontology.term_name', cell_line))
 
-    url = f'https://www.encodeproject.org/report.tsv?{urlencode(params)}'
+    if released:
+        params.append(('status', 'released'))
+
+    params.extend(kwargs.items())
+    params = urlencode(params)
+
+    url = f'https://www.encodeproject.org/report.tsv?type={entity_type}&{params}'
     print(f'ENCODE metadata URL: {url}')
     metadata = pd.read_csv(url, sep='\t', skiprows=1, dtype='str')
 
     metadata = metadata.loc[:, ~metadata.isna().all()]
-
-    assert metadata.shape[0] > 0, 'No files found!'
+    assert metadata.shape[0] > 0, 'No metadata found!'
 
     return metadata
 
@@ -94,8 +70,8 @@ def _load_encode_eCLIP(assembly: str, cell_line: str|None = None) -> pd.DataFram
     metadata = metadata[replicates.eq('1,2')]
 
     result = []
-    with tqdm(desc='eCLIP peaks found') as progress_bar:
-        for _, row in tqdm(metadata.iterrows(), total=metadata.shape[0], desc='eCLIP experiments'):
+    with tqdm(desc='ENCODE eCLIP', unit='peak') as progress_bar:
+        for _, row in tqdm(metadata.iterrows(), total=metadata.shape[0], desc='ENCODE eCLIP', unit='experiment'):
             bed = pd.read_csv(
                 f'https://www.encodeproject.org{row["Download URL"]}',
                 sep='\t', usecols=range(6),
