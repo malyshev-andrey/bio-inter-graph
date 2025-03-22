@@ -6,40 +6,58 @@ import requests
 import pandas as pd
 from tqdm.auto import tqdm
 
-from ..shared import memory
+from ..shared import memory, _read_tsv
 from ..ids_mapping import id2yapid
+
+
+def _to_pairwise(id1: pd.Series, id2: pd.Series) -> pd.DataFrame:
+    result = pd.DataFrame({
+        'yapid1': id2yapid(id1),
+        'yapid2': id2yapid(id2)
+    })
+    assert result['yapid1'].str.startswith('YAPID').all()
+    assert result['yapid2'].str.startswith('YAPID').all()
+
+    result = pd.concat([
+        result,
+        result.rename(columns={'yapid1': 'yapid2', 'yapid2': 'yapid1'})
+    ])
+    result = result[result['yapid1'] < result['yapid2']]
+    result = result.drop_duplicates()
+    return result
 
 
 @memory.cache
 def load_biogrid_interactions() -> pd.DataFrame:
-    url = 'https://downloads.thebiogrid.org/Download/BioGRID/Latest-Release/BIOGRID-MV-Physical-LATEST.tab3.zip'
-    result = pd.read_csv(url, sep='\t', dtype='str')
-    result = result[
-        result['Organism ID Interactor A'].eq('9606') &
-        result['Organism ID Interactor B'].eq('9606') &
-        ~result['Experimental System'].isin(['Protein-RNA', 'Affinity Capture-RNA'])
-    ]
+
+    def _is_appropriate_qualifications(qual: pd.Series) -> pd.Series:
+        qual = qual.str.lower()
+        qual = qual.str.replace(r'[^a-z0-9]', ' ', regex=True)
+        result = ~qual.str.contains(r'\b(?:proximity ligation|pla|chip)\b', regex=True)
+        return result
+
+    result = _read_tsv(
+        'https://downloads.thebiogrid.org/Download/BioGRID/Latest-Release/BIOGRID-MV-Physical-LATEST.tab3.zip',
+        filter_func=lambda df: df[
+            df['Organism ID Interactor A'].eq('9606') &
+            df['Organism ID Interactor B'].eq('9606') &
+            ~df['Experimental System'].isin({'Protein-RNA', 'Affinity Capture-RNA'}) &
+            _is_appropriate_qualifications(df['Qualifications'])
+        ]
+    )
+
     assert (
         result['Organism Name Interactor A'].eq('Homo sapiens') &
         result['Organism Name Interactor B'].eq('Homo sapiens')
     ).all()
+    assert not result['Experimental System'].str.contains('RNA').any()
+    assert result['Experimental System Type'].eq('physical').all()
 
-    result['yapid1'] = id2yapid(result['BioGRID ID Interactor A'])
-    result['yapid2'] = id2yapid(result['BioGRID ID Interactor B'])
-    assert (
-        result['yapid1'].str.startswith('YAPID').all() and
-        result['yapid2'].str.startswith('YAPID').all()
+    result = _to_pairwise(
+        result['BioGRID ID Interactor A'],
+        result['BioGRID ID Interactor B']
     )
 
-    ids = ['yapid1', 'yapid2']
-    result = result[ids]
-    swap = dict(zip(ids, ids[::-1]))
-    result = pd.concat([
-        result,
-        result.rename(columns=swap)
-    ])
-    result = result[result['yapid1'] < result['yapid2']]
-    result = result.drop_duplicates()
     return result
 
 
