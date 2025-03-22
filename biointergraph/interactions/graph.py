@@ -6,7 +6,7 @@ from tqdm.auto import tqdm
 from .ENCODE import encode_eCLIP2pairwise
 from .karr_seq import load_karr_seq_data
 from .ric_seq import load_ric_seq_data
-from .protein import load_IntAct_interactions, load_biogrid_interactions, load_string_interactions
+from .protein import load_intact_interactions, load_biogrid_interactions, load_string_interactions
 from .chip_seq import load_chip_seq_data
 from .rna_chrom import load_rna_chrom_data
 from ..shared import memory
@@ -39,7 +39,7 @@ def build_main_graph():
         encode_eCLIP2pairwise(assembly='hg38', annotation='gencode', pvalue=1),
         load_ric_seq_data(0.05),
         load_karr_seq_data(0.05),
-        load_IntAct_interactions(),
+        load_intact_interactions(),
         load_biogrid_interactions(),
         load_string_interactions(),
         load_chip_seq_data(),

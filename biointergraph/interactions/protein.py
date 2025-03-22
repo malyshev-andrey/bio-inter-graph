@@ -74,7 +74,7 @@ def load_string_interactions(min_score: int = 700) -> pd.DataFrame:
 
 
 @memory.cache
-def load_IntAct_interactions() -> pd.DataFrame:
+def load_intact_interactions() -> pd.DataFrame:
     result = _read_tsv(
         'https://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/species/human.txt',
         usecols=[
@@ -114,11 +114,9 @@ def load_IntAct_interactions() -> pd.DataFrame:
         assert result[c].str.match(regex).all()
 
     result['yapid1'] = id2yapid(result['#ID(s) interactor A'])
+    assert result['yapid1'].str.startswith('YAPID').all()
     result['yapid2'] = id2yapid(result['ID(s) interactor B'])
-    result = result[
-        result['yapid1'].str.startswith('YAPID') &
-        result['yapid2'].str.startswith('YAPID')
-    ]
+    assert result['yapid2'].str.startswith('YAPID').all()
 
     result = pd.concat([
         result,
