@@ -3,11 +3,16 @@ import pandas as pd
 import networkx as nx
 from tqdm.auto import tqdm
 
-from .encode import load_encode_eclip_data
+from .encode import (
+    load_encode_eclip_data,
+    load_encode_rip_data,
+    load_encode_iclip_data,
+    load_encode_chip_seq_data
+)
+from rna_protein import load_postar3_data, load_frip_seq_data
 from .karr_seq import load_karr_seq_data
 from .ric_seq import load_ric_seq_data
 from .protein import load_intact_interactions, load_biogrid_interactions, load_string_interactions
-from .chip_seq import load_chip_seq_data
 from .rna_chrom import load_rna_chrom_data
 from ..shared import memory
 from ..ids_mapping.protein import _build_yapid_graph
@@ -37,12 +42,16 @@ def _remove_minor_components(graph):
 def build_main_graph():
     data = [
         load_encode_eclip_data(assembly='hg38', annotation='gencode', cell_line='K562'),
+        load_encode_rip_data(annotation='gencode', cell_line='K562'),
+        load_encode_iclip_data(annotation='gencode', cell_line='K562'),
+        load_postar3_data(species='human', cell_line='K562', annotation='gencode'),
+        load_frip_seq_data(),
         load_ric_seq_data(0.05),
         load_karr_seq_data(0.05),
         load_intact_interactions(),
         load_biogrid_interactions(),
         load_string_interactions(),
-        load_chip_seq_data(),
+        load_encode_chip_seq_data(assembly='hg38', cell_line='K562'),
         load_rna_chrom_data()
     ]
 
