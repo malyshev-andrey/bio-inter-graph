@@ -9,7 +9,7 @@ from .encode import (
     load_encode_iclip_data,
     load_encode_chip_seq_data
 )
-from rna_protein import load_postar3_data, load_frip_seq_data
+from .rna_protein import load_postar3_data, load_frip_seq_data
 from .karr_seq import load_karr_seq_data
 from .ric_seq import load_ric_seq_data
 from .protein import load_intact_interactions, load_biogrid_interactions, load_string_interactions
