@@ -20,7 +20,7 @@ from ..ids import drop_id_version
 
 @memory.cache
 def _build_yagid_graph() -> pd.Series:
-    REBUILD_YAGID_MAPPING = True
+    REBUILD_YAGID_MAPPING = False
 
     if not REBUILD_YAGID_MAPPING:
         with importlib.resources.open_text('bio-inter-graph.static', 'id2yagid.json') as file:
