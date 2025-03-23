@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from time import sleep
+import importlib.resources
 
 import requests
 import pandas as pd
@@ -44,6 +45,21 @@ def _remove_minor_components(graph):
 
 @memory.cache
 def build_main_graph(max_workers: int = 2) -> nx.Graph:
+    REBUILD_MAIN_GRAPH = False
+
+    if not REBUILD_MAIN_GRAPH:
+        with importlib.resources.open_binary('bio-inter-graph.static', 'edges.tsv.gz') as file:
+            result = pd.read_csv(
+                file, compression='gzip',
+                sep='\t', header=None,
+                names=['source', 'target']
+            )
+
+        result = nx.from_pandas_edgelist(result)
+
+        return result
+
+
     data = [
         (load_encode_eclip_data, dict(assembly='hg38', annotation='gencode', cell_line='K562')),
         (load_encode_rip_data, dict(annotation='gencode', cell_line='K562')),
