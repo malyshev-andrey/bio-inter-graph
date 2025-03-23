@@ -3,6 +3,9 @@ import pandas as pd
 from scipy.stats import fisher_exact
 from tqdm.auto import tqdm
 
+from ..annotations import bed_intersect
+from ..shared import BED_COLUMNS
+
 
 def _fisher_pvalue(n12, n1, n2, n):
     result = fisher_exact(
@@ -55,4 +58,34 @@ def summarize_pairwise(raw_data, symmetrize: bool = False) -> pd.DataFrame:
         ),
         axis=1
     )
+    return result
+
+
+def _annotate_peaks(
+        peaks: pd.DataFrame,
+        annotation: pd.DataFrame, *,
+        assembly: str,
+        desc: str|None = None
+    ) -> pd.DataFrame:
+    result = bed_intersect(
+        peaks,
+        annotation,
+        unify_chr_assembly=assembly,
+        jaccard=True,
+        how='left'
+    )
+
+    no_intersect = result['start2'].eq(-1)
+    if desc is not None:
+        print(f'{desc} peaks without intersections: {no_intersect.sum()}')
+    result = result[~no_intersect]
+
+    peak_id = {f'{c}1': c for c in BED_COLUMNS}
+    result = result.rename(columns=peak_id)
+    result = result.sort_values('jaccard')
+    result = result.drop_duplicates(peak_id.values(), keep='last')
+
+    result = result[['name', 'name2']]
+    result.columns = 'source', 'target'
+
     return result

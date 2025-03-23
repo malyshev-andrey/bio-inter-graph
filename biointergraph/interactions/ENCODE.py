@@ -7,6 +7,7 @@ from tqdm.auto import tqdm
 from ..shared import memory, BED_COLUMNS
 from ..annotations import load_refseq_bed, load_gencode_bed, sanitize_bed, bed_intersect
 from ..ids_mapping import id2yapid, id2yagid
+from .main import _annotate_peaks
 
 
 def load_encode_metadata(
@@ -111,37 +112,22 @@ def _load_encode_eclip_bed(assembly: str, cell_line: str|None = None) -> pd.Data
 
 
 @memory.cache
-def encode_eCLIP2pairwise(
+def load_encode_eclip_data(
         assembly: str,
         annotation: str,
         cell_line: str|None = None
     ) -> pd.DataFrame:
-    eCLIP_bed = _load_encode_eclip_bed(assembly=assembly, cell_line=cell_line)
-    annotation_bed = {
+    peaks = _load_encode_eclip_bed(assembly=assembly, cell_line=cell_line)
+    annotation = {
         'gencode': load_gencode_bed,
         'refseq': load_refseq_bed
     }[annotation](assembly=assembly, feature='gene')
 
-    result = bed_intersect(
-        eCLIP_bed,
-        annotation_bed,
-        unify_chr_assembly=assembly,
-        jaccard=True,
-        how='left'
-    )
+    result = _annotate_peaks(peaks, annotation, assembly=assembly, desc='ENCODE eCLIP')
 
-    no_intersect = result['start2'].eq(-1)
-    print(f'ENCODE eCLIP peaks without intersections: {no_intersect.sum()}')
-    result = result[~no_intersect]
-
-    peak_id = {f'{c}1': c for c in BED_COLUMNS}
-    result = result.rename(columns=peak_id)
-    result = result.sort_values('jaccard')
-    result = result.drop_duplicates(peak_id.values(), keep='last')
-
-    result['yapid'] = id2yapid('SYMBOL:' + result['name'])
+    result['yapid'] = id2yapid('SYMBOL:' + result['source'])
     assert result['yapid'].str.startswith('YAPID').all()
-    result['yagid'] = id2yagid(result['name2'])
+    result['yagid'] = id2yagid(result['target'])
     assert result['yagid'].str.startswith('YAGID').all()
 
     result = result[['yapid', 'yagid']]

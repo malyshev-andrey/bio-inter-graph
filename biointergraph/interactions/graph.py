@@ -3,7 +3,7 @@ import pandas as pd
 import networkx as nx
 from tqdm.auto import tqdm
 
-from .ENCODE import encode_eCLIP2pairwise
+from .encode import load_encode_eclip_data
 from .karr_seq import load_karr_seq_data
 from .ric_seq import load_ric_seq_data
 from .protein import load_intact_interactions, load_biogrid_interactions, load_string_interactions
@@ -36,7 +36,7 @@ def _remove_minor_components(graph):
 @memory.cache
 def build_main_graph():
     data = [
-        encode_eCLIP2pairwise(assembly='hg38', annotation='gencode', pvalue=1),
+        load_encode_eclip_data(assembly='hg38', annotation='gencode', cell_line='K562'),
         load_ric_seq_data(0.05),
         load_karr_seq_data(0.05),
         load_intact_interactions(),
