@@ -44,11 +44,35 @@ def extended_refseq_intersect2pairwise() -> pd.DataFrame:
     refseq_data = _load_refseq_data('hg38')
     extended_data = load_extended_annotation(convert2bed=True)
 
-    result = _intersect2pairwise(bed_intersect(
+    result = bed_intersect(
         refseq_data,
         extended_data,
         unify_chr_assembly='hg38',
-        jaccard=True)
+        jaccard=True
     )
+    result = _intersect2pairwise(result)
+
     print(f'Extended/RefSeq intersect result: {result.shape}')
+    return result
+
+
+@memory.cache
+def extended_gencode_intersect2pairwise() -> pd.DataFrame:
+    gencode_data = load_gencode_bed('hg38', ['gene', 'transcript'])
+    extended_data = load_extended_annotation(
+        convert2bed=True,
+        filter_func=lambda df: df[
+            ~df['source'].eq('gencode44')
+        ]
+    )
+
+    result = bed_intersect(
+        gencode_data,
+        extended_data,
+        unify_chr_assembly='hg38',
+        jaccard=True
+    )
+    result = _intersect2pairwise(result)
+
+    print(f'Extended/GENCODE intersect result: {result.shape}')
     return result
