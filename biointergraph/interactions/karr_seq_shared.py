@@ -71,7 +71,7 @@ def _retrieve_karr_seq_metadata(cell_line: str|None = None) -> pd.DataFrame:
     for url in metadata['url']:
         requests.head(url, allow_redirects=True, timeout=5).raise_for_status()
 
-    metadata['url'] = metadata['url'].str.replace(r'https://', 'ftp://')
+    # metadata['url'] = metadata['url'].str.replace(r'https://', 'ftp://')
     return metadata
 
 

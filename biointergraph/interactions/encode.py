@@ -184,6 +184,7 @@ def load_encode_iclip_data(annotation: str, *, cell_line: str|None = None) -> pd
     return result
 
 
+@memory.cache
 def load_encode_rip_data(annotation: str, *, cell_line: str|None = None):
     metadata = load_encode_metadata(
         ['RIP-seq', 'RIP-chip'],
@@ -249,6 +250,7 @@ def _load_encode_chip_seq_bed(assembly: str, cell_line: str|None = None) -> pd.D
     return result
 
 
+@memory.cache
 def load_encode_chip_seq_data(assembly: str, cell_line: str|None = None) -> pd.DataFrame:
     peaks = _load_encode_chip_seq_bed(assembly, cell_line=cell_line)
     annotation = load_chromhmm_annotation()
