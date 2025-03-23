@@ -1,10 +1,10 @@
 from typing import Callable
+from urllib.error import HTTPError
 
 import requests
 import pandas as pd
-from tqdm.auto import tqdm
 
-from ..shared import memory, CHUNKSIZE
+from ..shared import memory, CHUNKSIZE, _read_tsv
 
 
 @memory.cache
@@ -81,24 +81,23 @@ def _load_single_karr_seq(
         chunksize: int|None = CHUNKSIZE
     ) -> pd.DataFrame:
 
-    columns = (
-        'readID',
-        'seqid1', 'pos1',
-        'seqid2', 'pos2',
-        'strand1', 'strand2'
-    )
-    kwargs = dict(sep='\t', header=None, names=columns, dtype='str')
-
-    if chunksize is None:
-        result = filter_func(pd.read_csv(path, **kwargs))
-    else:
-        result = []
-        desc = path if len(path) < 40 else path[:20] + ' ... ' + path[-20:]
-        with tqdm(desc=desc) as progress_bar:
-            for chunk in pd.read_csv(path, chunksize=chunksize, **kwargs):
-                progress_bar.update(chunk.shape[0])
-                result.append(filter_func(chunk))
-        result = pd.concat(result)
+    while True:
+        try:
+            result = _read_tsv(
+                path,
+                filter_func=filter_func,
+                header=None,
+                names=[
+                    'readID',
+                    'seqid1', 'pos1',
+                    'seqid2', 'pos2',
+                    'strand1', 'strand2'
+                ],
+                chunksize=chunksize
+            )
+            break
+        except HTTPError as e:
+            print(repr(e), path)
 
     assert 'pos1' not in result.columns or result['pos1'].str.isdigit().all()
     assert 'pos2' not in result.columns or result['pos2'].str.isdigit().all()

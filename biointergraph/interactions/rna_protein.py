@@ -45,6 +45,7 @@ def load_postar3_data(species: str, cell_line: str, annotation: str, **kwargs) -
     return result
 
 
+@memory.cache
 def load_frip_seq_data() -> pd.DataFrame:
     result = pd.concat([
         pd.read_csv(
