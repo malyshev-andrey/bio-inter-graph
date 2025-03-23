@@ -6,7 +6,6 @@ from tqdm.auto import tqdm
 
 from ..shared import memory, BED_COLUMNS
 from ..annotations import load_refseq_bed, load_gencode_bed, sanitize_bed
-from ..ids_mapping import id2yapid, id2yagid
 from .main import _annotate_peaks
 
 
@@ -157,5 +156,27 @@ def load_encode_iclip_data(annotation: str, *, cell_line: str|None = None) -> pd
             _annotate_peaks(repl, annotation, assembly='hg19', convert_ids=True)
         )
     result = result[0].merge(result[1], how='inner', validate='one_to_one')
+
+    return result
+
+
+def load_encode_rip_seq_data(annotation: str, *, cell_line: str|None = None):
+    metadata = load_encode_metadata(
+        'RIP-seq',
+        cell_line=cell_line,
+        file_format='bed',
+        processed='true',
+        assembly='hg19'
+    )
+    metadata = metadata[~metadata['Target label'].isna()]
+
+    result = _encode_metadata2bed(metadata, stranded=False)
+
+    annotation = {
+        'gencode': load_gencode_bed,
+        'refseq': load_refseq_bed
+    }[annotation](assembly='hg19', feature='gene')
+
+    result = _annotate_peaks(result, annotation, assembly='hg19', convert_ids=True, stranded=False)
 
     return result
