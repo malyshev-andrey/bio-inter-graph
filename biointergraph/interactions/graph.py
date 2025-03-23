@@ -43,7 +43,7 @@ def _remove_minor_components(graph):
 
 
 @memory.cache
-def build_main_graph() -> nx.Graph:
+def build_main_graph(max_workers: int = 2) -> nx.Graph:
     data = [
         (load_encode_eclip_data, dict(assembly='hg38', annotation='gencode', cell_line='K562')),
         (load_encode_rip_data, dict(annotation='gencode', cell_line='K562')),
@@ -60,7 +60,7 @@ def build_main_graph() -> nx.Graph:
         (load_gtrd_chip_seq_data, dict(cell_line='K562'))
     ]
 
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = []
         for func, kwargs in data:
             futures.append(executor.submit(func, **kwargs))
