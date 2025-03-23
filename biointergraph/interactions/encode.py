@@ -160,23 +160,26 @@ def load_encode_iclip_data(annotation: str, *, cell_line: str|None = None) -> pd
     return result
 
 
-def load_encode_rip_seq_data(annotation: str, *, cell_line: str|None = None):
+def load_encode_rip_data(annotation: str, *, cell_line: str|None = None):
     metadata = load_encode_metadata(
-        'RIP-seq',
+        ['RIP-seq', 'RIP-chip'],
         cell_line=cell_line,
         file_format='bed',
         processed='true',
         assembly='hg19'
     )
-    metadata = metadata[~metadata['Target label'].isna()]
+    metadata = metadata[
+        ~metadata['Target label'].isna() &
+        ~metadata['Target label'].eq('T7')
+    ]
 
-    result = _encode_metadata2bed(metadata, stranded=False)
+    result = _encode_metadata2bed(metadata, stranded=False, desc='RIP-seq, RIP-chip')
 
     annotation = {
         'gencode': load_gencode_bed,
         'refseq': load_refseq_bed
     }[annotation](assembly='hg19', feature='gene')
 
-    result = _annotate_peaks(result, annotation, assembly='hg19', convert_ids=True, stranded=False)
+    result = _annotate_peaks(result, annotation, assembly='hg19', stranded=False, convert_ids=True)
 
     return result
