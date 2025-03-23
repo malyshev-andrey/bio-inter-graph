@@ -4,7 +4,6 @@ from ..shared import BED_COLUMNS, memory, GOOGLE_DRIVE_URL, _read_tsv
 from ..ids import drop_id_version
 
 
-@memory.cache
 def load_extended_annotation(convert2bed: bool = False, **kwargs) -> pd.DataFrame:
     default_kwargs = dict(
         header=None,
