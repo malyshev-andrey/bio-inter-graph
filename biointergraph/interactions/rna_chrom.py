@@ -1,8 +1,9 @@
 import pandas as pd
 
 from ..shared import GOOGLE_DRIVE_URL, memory, _read_tsv
-from ..annotations import load_extended_annotation, bed_intersect, load_chromhmm_annotation
+from ..annotations import load_extended_annotation, load_chromhmm_annotation
 from ..ids_mapping import id2yagid
+from .main import _annotate_peaks
 
 
 @memory.cache
@@ -10,7 +11,8 @@ def load_redc_redchip_data() -> pd.DataFrame:
     result = _read_tsv(
         GOOGLE_DRIVE_URL.format(id='1nkg0Iofz8azz6BEfISWXG_DNQMlHEbi6'),
         compression='zip',
-        desc='Red-C, RedChIP'
+        desc='Red-C, RedChIP',
+        usecols=lambda name: name not in {'ID', 'sample'}
     )
 
     names_map = {
@@ -27,26 +29,15 @@ def load_redc_redchip_data() -> pd.DataFrame:
     cols = ['chr', 'start', 'end', 'name']
     result = result.rename(columns={f'{c}2': c for c in cols})
     result = result[cols]
+    result['score'], result['strand'] = 1000, '.'
 
-    result = bed_intersect(
-        result, load_chromhmm_annotation()[cols],
-        strandedness = None,
-        unify_chr_assembly = 'hg38',
-        jaccard = True,
-        how='left'
+    result = _annotate_peaks(
+        result, load_chromhmm_annotation(),
+        assembly='hg38', stranded=False,
+        desc='Red-C, RedChIP'
     )
-    no_intersections = result['name2'].eq('-1')
-    print(f'Peaks without intersections: {no_intersections.sum()}')
-    result = result[~no_intersections]
 
-    peak_id = ['chr', 'start1', 'end1', 'name1']
-    result = result.sort_values('jaccard', ascending=False)
-    result = result.drop_duplicates(peak_id, keep='first')
-
-    result['yagid'] = id2yagid(result['name1'])
-    assert result['yagid'].str.startswith('YAGID').all()
-
-    result = result.rename(columns={'name2': 'yalid'})
-    result = result[['yagid', 'yalid']].drop_duplicates()
+    result['source'] = id2yagid(result['source'], strict=True)
+    result = result.drop_duplicates()
 
     return result
