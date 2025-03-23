@@ -1,5 +1,6 @@
 from urllib.parse import urlencode
 from typing import Iterable
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pandas as pd
 from tqdm.auto import tqdm
@@ -59,6 +60,28 @@ def load_encode_metadata(
     return metadata
 
 
+def _encode_metadata_row2bed(
+        row: pd.Series,
+        features: str|dict|Iterable[str]|None = None
+    ) -> pd.DataFrame:
+    bed = pd.read_csv(
+        f'https://www.encodeproject.org{row["Download URL"]}',
+        sep='\t', usecols=range(6),
+        header=None, names=BED_COLUMNS,
+        dtype='str'
+    )
+    bed['name'] = row['Target label']
+
+    if isinstance(features, dict):
+        for key, value in features.items():
+            bed[key] = row[value]
+    elif features is not None:
+        for name in features:
+            bed[name] = row[name]
+
+    return bed
+
+
 def _encode_metadata2bed(
         files: pd.DataFrame, *,
         features: str|dict|Iterable[str]|None = None,
@@ -69,28 +92,22 @@ def _encode_metadata2bed(
         assay = files['Assay term name'].unique().item()
         desc = f'ENCODE {assay}'
 
+
     result = []
-    with tqdm(desc=desc, unit='peak') as progress_bar:
-        for _, row in tqdm(files.iterrows(), total=files.shape[0], desc=desc, unit='file'):
-            bed = pd.read_csv(
-                f'https://www.encodeproject.org{row["Download URL"]}',
-                sep='\t', usecols=range(6),
-                header=None, names=BED_COLUMNS,
-                dtype='str'
-            )
-            bed['name'] = row['Target label']
+    with ThreadPoolExecutor(max_workers=100) as executor:
+        futures = []
+        for _, row in files.iterrows():
+            futures.append(executor.submit(
+                _encode_metadata_row2bed,
+                row, features
+            ))
 
-            if isinstance(features, dict):
-                for key, value in features.items():
-                    bed[key] = row[value]
-            elif features is not None:
-                for name in features:
-                    bed[name] = row[name]
-
-            result.append(bed)
-            progress_bar.update(bed.shape[0])
+        tqdm_kwargs = dict(desc=desc, total=len(futures), unit='file')
+        for future in tqdm(as_completed(futures), **tqdm_kwargs):
+            result.append(future.result())
 
     result = pd.concat(result)
+
     result = sanitize_bed(result, stranded=stranded)
     return result
 

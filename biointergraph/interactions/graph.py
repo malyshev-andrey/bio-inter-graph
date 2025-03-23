@@ -46,11 +46,11 @@ def build_main_graph():
         load_encode_iclip_data(annotation='gencode', cell_line='K562'),
         load_postar3_data(species='human', cell_line='K562', annotation='gencode'),
         load_frip_seq_data(),
-        load_ric_seq_data(0.05),
-        load_karr_seq_data(0.05),
+        load_ric_seq_data(pvalue=0.05),
+        load_karr_seq_data(pvalue=0.05),
         load_intact_interactions(),
         load_biogrid_interactions(),
-        load_string_interactions(),
+        load_string_interactions(min_score=700),
         load_encode_chip_seq_data(assembly='hg38', cell_line='K562'),
         load_redc_redchip_data()
     ]
