@@ -1,5 +1,6 @@
 from typing import Callable
 from urllib.error import HTTPError
+from time import sleep
 
 import requests
 import pandas as pd
@@ -81,6 +82,7 @@ def _load_single_karr_seq(
         chunksize: int|None = CHUNKSIZE
     ) -> pd.DataFrame:
 
+    i = 0
     while True:
         try:
             result = _read_tsv(
@@ -98,6 +100,9 @@ def _load_single_karr_seq(
             break
         except HTTPError as e:
             print(repr(e), path)
+            print(f'Retry in {2**i}')
+            sleep(2**i)
+            i += 1
 
     assert 'pos1' not in result.columns or result['pos1'].str.isdigit().all()
     assert 'pos2' not in result.columns or result['pos2'].str.isdigit().all()
