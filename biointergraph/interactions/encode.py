@@ -131,3 +131,30 @@ def load_encode_eclip_data(
     )
 
     return result
+
+
+@memory.cache
+def load_encode_iclip_data(annotation: str, *, cell_line: str|None = None) -> pd.DataFrame:
+    metadata = load_encode_metadata(
+        assay='iCLIP',
+        cell_line=cell_line,
+        file_format='bed',
+        assembly='hg19'
+    )
+    peaks = _encode_metadata2bed(metadata, features={'repl': 'Biological replicates'})
+
+    annotation = {
+        'gencode': load_gencode_bed,
+        'refseq': load_refseq_bed
+    }[annotation](assembly='hg19', feature='gene')
+
+    assert peaks['repl'].nunique() == 2
+
+    result = []
+    for _, repl in peaks.groupby('repl'):
+        result.append(
+            _annotate_peaks(repl, annotation, assembly='hg19', convert_ids=True)
+        )
+    result = result[0].merge(result[1], how='inner', validate='one_to_one')
+
+    return result

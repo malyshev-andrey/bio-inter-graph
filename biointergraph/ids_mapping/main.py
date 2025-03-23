@@ -72,9 +72,12 @@ def _build_yagid_graph() -> pd.Series:
     return result
 
 
-def id2yagid(ids: pd.Series|None = None) -> pd.Series:
+def id2yagid(ids: pd.Series|None = None, *, strict: bool = False) -> pd.Series:
     result = _build_yagid_graph()
     if ids is not None:
         ids = drop_id_version(ids)
-        result = ids.map(result).combine_first(ids)
+        result = ids.map(result)
+        if strict:
+            assert not result.isna().any()
+        result = result.combine_first(ids)
     return result
