@@ -1,6 +1,6 @@
 import pandas as pd
 
-from ..annotations import load_gencode_bed, load_refseq_bed, bed_intersect
+from ..annotations import load_gencode_bed, load_refseq_bed
 from ..ids_mapping import id2yapid, id2yagid
 from ..shared import _read_tsv, memory, BED_COLUMNS
 from .main import _annotate_peaks

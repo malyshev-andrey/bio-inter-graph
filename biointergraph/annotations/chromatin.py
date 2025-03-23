@@ -5,7 +5,7 @@ from .main import sanitize_bed
 from .intersect import bed_intersect
 
 
-def _collapse_SPIN_states(states: pd.Series) -> pd.Series:
+def _collapse_spin_states(states: pd.Series) -> pd.Series:
     result = states.replace(
         '^Near_Lm.*', 'Near_Lm', regex=True
     ).replace(
@@ -16,7 +16,7 @@ def _collapse_SPIN_states(states: pd.Series) -> pd.Series:
     return result
 
 
-def _load_SPIN_annotation(**kwargs) -> pd.DataFrame:
+def _load_spin_annotation(**kwargs) -> pd.DataFrame:
     id = '1gdwtrhTctddO9TCBXBaZpZFOAHWCUTli'
     url = f'https://drive.usercontent.google.com/download?id={id}&export=download&confirm=t'
 
@@ -35,12 +35,12 @@ def _load_SPIN_annotation(**kwargs) -> pd.DataFrame:
     assert (result['start'] < result['end']).all()
 
     result = result.rename(columns={'name': 'SPIN_full'})
-    result['SPIN'] = _collapse_SPIN_states(result['SPIN_full'])
+    result['SPIN'] = _collapse_spin_states(result['SPIN_full'])
 
     return result
 
 
-def _collapse_ChromHMM_states(states: pd.Series) -> pd.Series:
+def _collapse_chromhmm_states(states: pd.Series) -> pd.Series:
     result = states.replace(
         r'^Enh.*', 'Enh', regex=True
     ).replace(
@@ -58,7 +58,7 @@ def _collapse_ChromHMM_states(states: pd.Series) -> pd.Series:
 
 
 @memory.cache
-def load_ChromHMM_annotation(**kwargs):
+def load_chromhmm_annotation(**kwargs):
     url = 'https://personal.broadinstitute.org/cboix/epimap/ChromHMM/observed_aux_18_hg38/CALLS/BSS00762_18_CALLS_segments.bed.gz'
     default_kwargs = dict(
         sep='\t',
@@ -80,7 +80,7 @@ def load_ChromHMM_annotation(**kwargs):
 
     n = result.shape[0]
 
-    SPIN = _load_SPIN_annotation()
+    SPIN = _load_spin_annotation()
     result = bed_intersect(
         result, SPIN,
         strandedness=None,
@@ -100,6 +100,6 @@ def load_ChromHMM_annotation(**kwargs):
     result['name'] = 'YALID' + result.index.astype('str').str.zfill(7)
     assert result['name'].str.len().eq(12).all()
 
-    result['state'] = _collapse_ChromHMM_states(result['state_full'])
+    result['state'] = _collapse_chromhmm_states(result['state_full'])
 
     return result

@@ -5,7 +5,7 @@ from .extended import load_extended_annotation, extended_gene_id2ensembl_gene_id
 from .ucsc import fetch_ucsc_table, unify_chr
 from .gff2bed import gff2bed
 from .intersect import bed_intersect, bed_merge
-from .chromatin import load_ChromHMM_annotation
+from .chromatin import load_chromhmm_annotation
 
 
 __all__ = [
@@ -16,5 +16,5 @@ __all__ = [
     'fetch_ucsc_table', 'unify_chr',
     'gff2bed',
     'bed_intersect', 'bed_merge',
-    'load_ChromHMM_annotation'
+    'load_chromhmm_annotation'
 ]

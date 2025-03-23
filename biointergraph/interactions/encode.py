@@ -5,7 +5,12 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 from ..shared import memory, BED_COLUMNS
-from ..annotations import load_refseq_bed, load_gencode_bed, sanitize_bed
+from ..annotations import (
+    load_refseq_bed, load_gencode_bed,
+    sanitize_bed, bed_merge,
+    load_chromhmm_annotation
+)
+from ..ids_mapping import id2yapid
 from .main import _annotate_peaks
 
 
@@ -27,6 +32,19 @@ def load_encode_metadata(
 
     if released:
         params.append(('status', 'released'))
+
+    if 'assembly' in kwargs:
+        assembly = kwargs['assembly']
+        ASSEMBLIES = {
+            'hg38': 'GRCh38', 'GRCh38': 'GRCh38',
+            'GRCh37': 'hg19', 'hg19': 'hg19',
+        }
+        if assembly not in ASSEMBLIES:
+            raise ValueError(
+                f'"{assembly}" is not a valid argument. '
+                f'Valid arguments are: {", ".join(ASSEMBLIES)}'
+            )
+        kwargs['assembly'] = ASSEMBLIES[assembly]
 
     params.extend(kwargs.items())
     params = urlencode(params)
@@ -79,17 +97,6 @@ def _encode_metadata2bed(
 
 @memory.cache
 def _load_encode_eclip_bed(assembly: str, cell_line: str|None = None) -> pd.DataFrame:
-    ASSEMBLIES = {
-        'hg38': 'GRCh38', 'GRCh38': 'GRCh38',
-        'GRCh37': 'hg19', 'hg19': 'hg19',
-    }
-    if assembly not in ASSEMBLIES:
-        raise ValueError(
-            f'"{assembly}" is not a valid argument. '
-            f'Valid arguments are: {", ".join(ASSEMBLIES)}'
-        )
-    assembly = ASSEMBLIES[assembly]
-
     default_kwargs = dict(
         assay='eCLIP',
         processed='true',
@@ -181,5 +188,62 @@ def load_encode_rip_data(annotation: str, *, cell_line: str|None = None):
     }[annotation](assembly='hg19', feature='gene')
 
     result = _annotate_peaks(result, annotation, assembly='hg19', stranded=False, convert_ids=True)
+
+    return result
+
+
+@memory.cache
+def _load_encode_chip_seq_bed(assembly: str, cell_line: str|None = None) -> pd.DataFrame:
+    metadata = load_encode_metadata(
+        'TF ChIP-seq',
+        cell_line=cell_line,
+        processed='true',
+        file_format='bed',
+        assembly=assembly
+    )
+
+    output_types = {'IDR thresholded peaks', 'conservative IDR thresholded peaks'}
+    metadata = metadata[metadata['Output type'].isin(output_types)]
+
+    n_experiments = metadata['Dataset'].nunique()
+
+    metadata['is_conservative'] = metadata['Output type'].eq('conservative IDR thresholded peaks')
+    metadata = metadata[
+        ~metadata.groupby(['Dataset'])['is_conservative'].transform('any')
+        | metadata['is_conservative']
+    ]
+
+    assert metadata['Dataset'].nunique() == n_experiments
+
+    metadata['Date created'] = pd.to_datetime(metadata['Date created'])
+    metadata = metadata.sort_values('Date created')
+    metadata = metadata.drop_duplicates('Dataset', keep='last')
+
+    metadata = metadata[
+        ~metadata['Target label'].isna() &
+        ~metadata['Target label'].isin({'POLR2AphosphoS5', 'POLR2AphosphoS2'})
+    ]
+
+    result = _encode_metadata2bed(metadata, stranded=False)
+
+    result = bed_merge(result, by='Name')
+    result['score'], result['strand'] = 1000, '.'
+
+    return result
+
+
+def load_encode_chip_seq_data(assembly: str, cell_line: str|None = None) -> pd.DataFrame:
+    peaks = _load_encode_chip_seq_bed(assembly, cell_line=cell_line)
+    annotation = load_chromhmm_annotation()
+
+    result = _annotate_peaks(
+        peaks, annotation,
+        assembly='hg38',
+        desc='ENCODE ChIP-seq',
+        stranded=False
+    )
+
+    result['source'] = id2yapid('SYMBOL:' + result['source'], strict=True)
+    result = result.drop_duplicates()
 
     return result
