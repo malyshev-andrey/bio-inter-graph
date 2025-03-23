@@ -13,7 +13,7 @@ from .protein import (
     load_intact_interactions
 )
 from .graph import build_main_graph, describe_graph, detect_communities, describe_nodes
-from .rna_chrom import load_rna_chrom_data
+from .rna_chrom import load_redc_redchip_data
 from .rna_protein import load_postar3_data, load_frip_seq_data
 
 
@@ -29,6 +29,6 @@ __all__ = [
     'load_biogrid_interactions',
     'load_intact_interactions',
     'build_main_graph', 'describe_graph', 'detect_communities', 'describe_nodes',
-    'load_rna_chrom_data',
+    'load_redc_redchip_data',
     'load_postar3_data', 'load_frip_seq_data'
 ]

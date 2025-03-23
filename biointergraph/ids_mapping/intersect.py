@@ -3,7 +3,6 @@ import pandas as pd
 from ..shared import memory
 from ..ids import drop_id_version
 from ..annotations import load_refseq_bed, load_gencode_bed, bed_intersect, load_extended_annotation
-from curses.ascii import isdigit
 
 
 @memory.cache

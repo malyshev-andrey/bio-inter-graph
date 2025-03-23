@@ -1,16 +1,12 @@
-from nis import cat
 import pandas as pd
 
-from ..shared import BED_COLUMNS, memory
+from ..shared import BED_COLUMNS, memory, GOOGLE_DRIVE_URL, _read_tsv
 from ..ids import drop_id_version
 
 
 @memory.cache
-def load_extended_annotation(convert2bed: bool = False) -> pd.DataFrame:
-    url = 'https://drive.usercontent.google.com/download?id=1n2VDbdYe-0di0PVjOKxxk0hZgC914l4e&export=download&confirm=t'
-
+def load_extended_annotation(convert2bed: bool = False, **kwargs) -> pd.DataFrame:
     default_kwargs = dict(
-        sep='\t',
         header=None,
         names=[
             'chr' if convert2bed else 'seqid', 'start', 'end',
@@ -18,10 +14,13 @@ def load_extended_annotation(convert2bed: bool = False) -> pd.DataFrame:
             'source', 'gene_id'
         ],
         usecols=range(8),
-        dtype='str'
+        desc='Extended annotation: '
     )
-
-    result = pd.read_csv(url, **default_kwargs)
+    default_kwargs.update(kwargs)
+    result = _read_tsv(
+        GOOGLE_DRIVE_URL.format(id='1n2VDbdYe-0di0PVjOKxxk0hZgC914l4e'),
+        **default_kwargs
+    )
 
     result['extended_gene_id'] = result.index.astype('str')
     result['extended_gene_id'] = result['extended_gene_id'].str.zfill(7)

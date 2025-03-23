@@ -1,16 +1,17 @@
 import pandas as pd
 
-from ..shared import GOOGLE_DRIVE_URL, memory
+from ..shared import GOOGLE_DRIVE_URL, memory, _read_tsv
 from ..annotations import load_extended_annotation, bed_intersect, load_chromhmm_annotation
 from ..ids_mapping import id2yagid
 
 
 @memory.cache
-def load_rna_chrom_data(**kwargs) -> pd.DataFrame:
-    url = GOOGLE_DRIVE_URL.format(id='1nkg0Iofz8azz6BEfISWXG_DNQMlHEbi6')
-    default_kwargs = dict(sep='\t', compression='zip', dtype='str')
-    default_kwargs.update(kwargs)
-    result = pd.read_csv(url, **default_kwargs)
+def load_redc_redchip_data() -> pd.DataFrame:
+    result = _read_tsv(
+        GOOGLE_DRIVE_URL.format(id='1nkg0Iofz8azz6BEfISWXG_DNQMlHEbi6'),
+        compression='zip',
+        desc='Red-C, RedChIP'
+    )
 
     names_map = {
         'seqid': 'chr1', 'start': 'gene_start',
