@@ -74,5 +74,8 @@ def extended_gencode_intersect2pairwise() -> pd.DataFrame:
     )
     result = _intersect2pairwise(result)
 
-    print(f'Extended/GENCODE intersect result: {result.shape}')
+    print(
+        f'Extended/GENCODE intersect result: {result.shape};',
+        f'extended annotation shape: {extended_data.shape}'
+    )
     return result

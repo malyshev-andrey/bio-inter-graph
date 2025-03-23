@@ -5,7 +5,11 @@ import importlib.resources
 import pandas as pd
 import networkx as nx
 
-from .intersect import gencode_refseq_intersect2pairwise, extended_refseq_intersect2pairwise
+from .intersect import (
+    gencode_refseq_intersect2pairwise,
+    extended_refseq_intersect2pairwise,
+    extended_gencode_intersect2pairwise
+)
 from .BioMart import load_BioMart_pairwise
 from .OrgHsEgDb import load_OrgHsEgDb_pairwise
 from .entrez import karr_seq_ids2entrezgene_id
@@ -16,7 +20,7 @@ from ..ids import drop_id_version
 
 @memory.cache
 def _build_yagid_graph() -> pd.Series:
-    REBUILD_YAGID_MAPPING = False
+    REBUILD_YAGID_MAPPING = True
 
     if not REBUILD_YAGID_MAPPING:
         with importlib.resources.open_text('bio-inter-graph.static', 'id2yagid.json') as file:
@@ -43,6 +47,7 @@ def _build_yagid_graph() -> pd.Series:
 
     # extended annotation
     pairs.append(extended_refseq_intersect2pairwise())
+    pairs.append(extended_gencode_intersect2pairwise())
     pairs.append(extended_gene_id2ensembl_gene_id())
 
     # KARR-seq refseq_transcript_ids -> entrezgene_id
