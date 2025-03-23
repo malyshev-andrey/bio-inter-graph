@@ -5,6 +5,7 @@ from tqdm.auto import tqdm
 
 from ..annotations import bed_intersect
 from ..shared import BED_COLUMNS
+from ..ids_mapping import id2yapid, id2yagid
 
 
 def _fisher_pvalue(n12, n1, n2, n):
@@ -65,7 +66,8 @@ def _annotate_peaks(
         peaks: pd.DataFrame,
         annotation: pd.DataFrame, *,
         assembly: str,
-        desc: str|None = None
+        desc: str|None = None,
+        convert_ids: bool = False
     ) -> pd.DataFrame:
     result = bed_intersect(
         peaks,
@@ -87,5 +89,14 @@ def _annotate_peaks(
 
     result = result[['name', 'name2']]
     result.columns = 'source', 'target'
+
+    if convert_ids:
+        result['source'] = id2yapid('SYMBOL:' + result['source'])
+        result['target'] = id2yagid(result['target'])
+
+        assert result['source'].str.startswith('YAPID').all()
+        assert result['target'].str.startswith('YAGID').all()
+
+        result = result.drop_duplicates()
 
     return result

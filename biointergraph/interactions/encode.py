@@ -5,7 +5,7 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 from ..shared import memory, BED_COLUMNS
-from ..annotations import load_refseq_bed, load_gencode_bed, sanitize_bed, bed_intersect
+from ..annotations import load_refseq_bed, load_gencode_bed, sanitize_bed
 from ..ids_mapping import id2yapid, id2yagid
 from .main import _annotate_peaks
 
@@ -123,14 +123,11 @@ def load_encode_eclip_data(
         'refseq': load_refseq_bed
     }[annotation](assembly=assembly, feature='gene')
 
-    result = _annotate_peaks(peaks, annotation, assembly=assembly, desc='ENCODE eCLIP')
-
-    result['yapid'] = id2yapid('SYMBOL:' + result['source'])
-    assert result['yapid'].str.startswith('YAPID').all()
-    result['yagid'] = id2yagid(result['target'])
-    assert result['yagid'].str.startswith('YAGID').all()
-
-    result = result[['yapid', 'yagid']]
-    result = result.drop_duplicates()
+    result = _annotate_peaks(
+        peaks, annotation,
+        assembly=assembly,
+        desc='ENCODE eCLIP',
+        convert_ids=True
+    )
 
     return result
