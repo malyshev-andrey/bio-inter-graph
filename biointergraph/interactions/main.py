@@ -74,7 +74,7 @@ def _annotate_peaks(
         peaks,
         annotation,
         unify_chr_assembly=assembly,
-        strandedness = 'same' if stranded else None
+        strandedness = 'same' if stranded else None,
         jaccard=True,
         how='left'
     )
