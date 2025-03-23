@@ -1,7 +1,7 @@
 import pandas as pd
 
 from ..shared import GOOGLE_DRIVE_URL, memory
-from ..annotations import load_extended_annotation, bed_intersect, load_ChromHMM_annotation
+from ..annotations import load_extended_annotation, bed_intersect, load_chromhmm_annotation
 from ..ids_mapping import id2yagid
 
 
@@ -28,7 +28,7 @@ def load_rna_chrom_data(**kwargs) -> pd.DataFrame:
     result = result[cols]
 
     result = bed_intersect(
-        result, load_ChromHMM_annotation()[cols],
+        result, load_chromhmm_annotation()[cols],
         strandedness = None,
         unify_chr_assembly = 'hg38',
         jaccard = True,
