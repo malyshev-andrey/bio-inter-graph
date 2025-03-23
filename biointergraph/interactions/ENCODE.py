@@ -41,8 +41,44 @@ def load_encode_metadata(
     return metadata
 
 
+def _encode_metadata2bed(
+        files: pd.DataFrame, *,
+        features: str|dict|Iterable[str]|None = None,
+        desc: str|None = None,
+        stranded: bool = True
+    ) -> pd.DataFrame:
+    if desc is None:
+        assay = files['Assay term name'].unique().item()
+        desc = f'ENCODE {assay}'
+
+    result = []
+    with tqdm(desc=desc, unit='peak') as progress_bar:
+        for _, row in tqdm(files.iterrows(), total=files.shape[0], desc=desc, unit='file'):
+            bed = pd.read_csv(
+                f'https://www.encodeproject.org{row["Download URL"]}',
+                sep='\t', usecols=range(6),
+                header=None, names=BED_COLUMNS,
+                dtype='str'
+            )
+            bed['name'] = row['Target label']
+
+            if isinstance(features, dict):
+                for key, value in features.items():
+                    bed[key] = row[value]
+            elif features is not None:
+                for name in features:
+                    bed[name] = row[name]
+
+            result.append(bed)
+            progress_bar.update(bed.shape[0])
+
+    result = pd.concat(result)
+    result = sanitize_bed(result, stranded=stranded)
+    return result
+
+
 @memory.cache
-def _load_encode_eCLIP(assembly: str, cell_line: str|None = None) -> pd.DataFrame:
+def _load_encode_eclip_bed(assembly: str, cell_line: str|None = None) -> pd.DataFrame:
     ASSEMBLIES = {
         'hg38': 'GRCh38', 'GRCh38': 'GRCh38',
         'GRCh37': 'hg19', 'hg19': 'hg19',
@@ -69,23 +105,7 @@ def _load_encode_eCLIP(assembly: str, cell_line: str|None = None) -> pd.DataFram
     assert replicates.value_counts(normalize=True).eq(1/3).all()
     metadata = metadata[replicates.eq('1,2')]
 
-    result = []
-    with tqdm(desc='ENCODE eCLIP', unit='peak') as progress_bar:
-        for _, row in tqdm(metadata.iterrows(), total=metadata.shape[0], desc='ENCODE eCLIP', unit='experiment'):
-            bed = pd.read_csv(
-                f'https://www.encodeproject.org{row["Download URL"]}',
-                sep='\t', usecols=range(6),
-                header=None, names=BED_COLUMNS,
-                dtype='str'
-            )
-            bed['name'] = row['Target label']
-            bed['cell_line'] = row['Biosample name']
-
-            result.append(bed)
-            progress_bar.update(bed.shape[0])
-
-    result = pd.concat(result)
-    result = sanitize_bed(result)
+    result = _encode_metadata2bed(metadata, features={'cell_line': 'Biosample name'})
 
     return result
 
@@ -96,7 +116,7 @@ def encode_eCLIP2pairwise(
         annotation: str,
         cell_line: str|None = None
     ) -> pd.DataFrame:
-    eCLIP_bed = _load_encode_eCLIP(assembly=assembly, cell_line=cell_line)
+    eCLIP_bed = _load_encode_eclip_bed(assembly=assembly, cell_line=cell_line)
     annotation_bed = {
         'gencode': load_gencode_bed,
         'refseq': load_refseq_bed
