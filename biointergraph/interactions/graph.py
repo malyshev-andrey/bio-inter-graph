@@ -1,3 +1,6 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from time import sleep
+
 import requests
 import pandas as pd
 import networkx as nx
@@ -40,34 +43,42 @@ def _remove_minor_components(graph):
 
 
 @memory.cache
-def build_main_graph():
+def build_main_graph() -> nx.Graph:
     data = [
-        load_encode_eclip_data(assembly='hg38', annotation='gencode', cell_line='K562'),
-        load_encode_rip_data(annotation='gencode', cell_line='K562'),
-        load_encode_iclip_data(annotation='gencode', cell_line='K562'),
-        load_postar3_data(species='human', cell_line='K562', annotation='gencode'),
-        load_frip_seq_data(),
-        load_ric_seq_data(pvalue=0.05),
-        load_karr_seq_data(pvalue=0.05),
-        load_intact_interactions(),
-        load_biogrid_interactions(),
-        load_string_interactions(min_score=700),
-        load_encode_chip_seq_data(assembly='hg38', cell_line='K562'),
-        load_redc_redchip_data(),
-        load_gtrd_chip_seq_data(cell_line='K562')
+        (load_encode_eclip_data, dict(assembly='hg38', annotation='gencode', cell_line='K562')),
+        (load_encode_rip_data, dict(annotation='gencode', cell_line='K562')),
+        (load_encode_iclip_data, dict(annotation='gencode', cell_line='K562')),
+        (load_postar3_data, dict(species='human', cell_line='K562', annotation='gencode')),
+        (load_frip_seq_data, dict()),
+        (load_ric_seq_data, dict(pvalue=0.05)),
+        (load_karr_seq_data, dict(pvalue=0.05)),
+        (load_intact_interactions, dict()),
+        (load_biogrid_interactions, dict()),
+        (load_string_interactions, dict(min_score=700)),
+        (load_encode_chip_seq_data, dict(assembly='hg38', cell_line='K562')),
+        (load_redc_redchip_data, dict()),
+        (load_gtrd_chip_seq_data, dict(cell_line='K562'))
     ]
 
-    for df in data:
-        assert df.shape[1] == 2
-        df.columns = 'source', 'target'
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = []
+        for func, kwargs in data:
+            futures.append(executor.submit(func, **kwargs))
+            sleep(1)
 
+        tqdm_kwargs = dict(total=len(futures), unit='source', desc='Collecting data: ')
+        data = []
+        for future in tqdm(as_completed(futures), **tqdm_kwargs):
+            df = future.result()
+            assert df.shape[1] == 2
+            df.columns = 'source', 'target'
+            data.append(df)
     data = pd.concat(data)
+
     assert data.shape[1] == 2
     regex = r'^YA[LPG]ID\d{7}$'
-    assert (
-        data['source'].str.match(regex).all() and
-        data['target'].str.match(regex).all()
-    )
+    assert data['source'].str.match(regex).all()
+    assert data['target'].str.match(regex).all()
 
     graph = nx.from_pandas_edgelist(data)
 

@@ -53,7 +53,8 @@ def _gtrd_metadata2bed(metadata: pd.DataFrame) -> pd.DataFrame:
                 converter=converter.name
             ))
 
-        for future in tqdm(as_completed(futures), total=len(futures), unit='file'):
+        tqdm_kwargs = dict(total=len(futures), unit='file', desc='GTRD ChIP-seq')
+        for future in tqdm(as_completed(futures), **tqdm_kwargs):
             result.append(future.result())
     result = pd.concat(result)
 
