@@ -14,6 +14,7 @@ from .karr_seq import load_karr_seq_data
 from .ric_seq import load_ric_seq_data
 from .protein import load_intact_interactions, load_biogrid_interactions, load_string_interactions
 from .rna_chrom import load_redc_redchip_data
+from .gtrd import load_gtrd_chip_seq_data
 from ..shared import memory
 from ..ids_mapping.protein import _build_yapid_graph
 
@@ -52,7 +53,8 @@ def build_main_graph():
         load_biogrid_interactions(),
         load_string_interactions(min_score=700),
         load_encode_chip_seq_data(assembly='hg38', cell_line='K562'),
-        load_redc_redchip_data()
+        load_redc_redchip_data(),
+        load_gtrd_chip_seq_data(cell_line='K562')
     ]
 
     for df in data:
