@@ -139,6 +139,7 @@ def load_encode_iclip_data(annotation: str, *, cell_line: str|None = None) -> pd
         assay='iCLIP',
         cell_line=cell_line,
         file_format='bed',
+        processed='true',
         assembly='hg19'
     )
     peaks = _encode_metadata2bed(metadata, features={'repl': 'Biological replicates'})

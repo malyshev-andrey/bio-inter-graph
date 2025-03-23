@@ -67,12 +67,14 @@ def _annotate_peaks(
         annotation: pd.DataFrame, *,
         assembly: str,
         desc: str|None = None,
+        stranded: bool = True,
         convert_ids: bool = False
     ) -> pd.DataFrame:
     result = bed_intersect(
         peaks,
         annotation,
         unify_chr_assembly=assembly,
+        strandedness = 'same' if stranded else None
         jaccard=True,
         how='left'
     )
