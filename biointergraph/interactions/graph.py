@@ -60,19 +60,23 @@ def build_main_graph(max_workers: int = 2) -> nx.Graph:
         (load_gtrd_chip_seq_data, dict(cell_line='K562'))
     ]
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = []
-        for func, kwargs in data:
-            futures.append(executor.submit(func, **kwargs))
-            sleep(1)
+    tqdm_kwargs = dict(total=len(data), unit='source', desc='Collecting data: ')
+    if max_workers > 1:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = []
+            for func, kwargs in data:
+                futures.append(executor.submit(func, **kwargs))
+                sleep(1)
 
-        tqdm_kwargs = dict(total=len(futures), unit='source', desc='Collecting data: ')
-        data = []
-        for future in tqdm(as_completed(futures), **tqdm_kwargs):
-            df = future.result()
-            assert df.shape[1] == 2
-            df.columns = 'source', 'target'
-            data.append(df)
+            data = [f.result() for f in tqdm(as_completed(futures), **tqdm_kwargs)]
+
+    else:
+        data = [func(**kwargs) for func, kwargs in tqdm(data, **tqdm_kwargs)]
+
+    for df in data:
+        assert df.shape[1] == 2
+        df.columns = 'source', 'target'
+
     data = pd.concat(data)
 
     assert data.shape[1] == 2
