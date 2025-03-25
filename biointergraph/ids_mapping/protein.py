@@ -127,6 +127,8 @@ def _build_yapid_graph():
 
 def id2yapid(ids: pd.Series|None = None, *, strict: bool = False) -> pd.Series:
     result = _build_yapid_graph()
+    result.name = 'yapid'
+
     if ids is not None:
         result = ids.map(result)
         if strict:

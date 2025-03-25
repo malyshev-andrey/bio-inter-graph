@@ -79,6 +79,8 @@ def _build_yagid_graph() -> pd.Series:
 
 def id2yagid(ids: pd.Series|None = None, *, strict: bool = False) -> pd.Series:
     result = _build_yagid_graph()
+    result.name = 'yagid'
+
     if ids is not None:
         ids = drop_id_version(ids)
         result = ids.map(result)
