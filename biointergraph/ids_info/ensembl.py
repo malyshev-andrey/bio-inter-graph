@@ -158,7 +158,17 @@ def _unify_ensembl_biotypes(biotypes: pd.Series) -> pd.Series:
         ~biotypes.str.match('^(TR|IG)_[A-Z]_gene$'),
         'IG_TR_gene'
     )
-    biotypes = biotypes.replace('protein_coding_CDS_not_defined', 'mRNA')
+    biotypes = biotypes.replace(
+        ['protein_coding_CDS_not_defined', 'protein_coding_LoF'],
+        'mRNA'
+    )
+    biotypes = biotypes.replace(
+        [
+            'retained_intron', 'nonsense_mediated_decay',
+            'non_stop_decay', 'processed_transcript'
+        ],
+        float('nan')
+    )
     biotypes = biotypes.replace(UNIFY_BIOTYPES)
     return biotypes
 

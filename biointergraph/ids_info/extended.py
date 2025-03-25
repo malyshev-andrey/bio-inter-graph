@@ -17,18 +17,22 @@ def extended_gene_id2biotype(ids: pd.Series|None = None) -> pd.Series:
         ~result.str.contains('pseudogene'),
         'pseudogene'
     )
+    result = result.where(
+        ~result.str.match('^(TR|IG)_[A-Z]_gene$'),
+        'IG_TR_gene'
+    )
     result = result.replace({
         'uncertain_coding': 'mRNA',
         'vlinc': 'lncRNA',
         'small_RNA': 'sRNA',
         'trna': 'tRNA',
         'scaRna': 'scaRNA',
-        'short_ncRNA': float('nan'),
-        'RNA': float('nan')
+        'HAcaBox': 'snoRNA',
+        'CDBox': 'snoRNA'
     })
-    result = result.where(
-        ~result.str.match('^(TR|IG)_[A-Z]_gene$'),
-        'IG_TR_gene'
+    result = result.replace(
+        ['short_ncRNA', 'RNA', 'sense_overlap_RNA', 'structural_RNA'],
+        float('nan')
     )
     result = result.replace(UNIFY_BIOTYPES)
 

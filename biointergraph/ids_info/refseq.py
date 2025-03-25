@@ -76,7 +76,7 @@ def refseq_transcript_id2biotype(ids: pd.Series|None = None) -> pd.Series:
 
     result = result.set_index('refseq_transcript_id', verify_integrity=True)
     result = result['biotype']
-    result = result.replace('ncRNA', float('nan'))
+    result = result.replace(['ncRNA', 'antisense_RNA'], float('nan'))
     result = result.replace(UNIFY_BIOTYPES)
 
     if ids is not None:
