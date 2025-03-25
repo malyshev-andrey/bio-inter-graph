@@ -26,6 +26,10 @@ def extended_gene_id2biotype(ids: pd.Series|None = None) -> pd.Series:
         'short_ncRNA': float('nan'),
         'RNA': float('nan')
     })
+    result = result.where(
+        ~result.str.match('^(TR|IG)_[A-Z]_gene$'),
+        'IG_TR_gene'
+    )
     result = result.replace(UNIFY_BIOTYPES)
 
     if ids is not None:

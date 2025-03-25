@@ -154,6 +154,10 @@ def _unify_ensembl_biotypes(biotypes: pd.Series) -> pd.Series:
         ~biotypes.str.contains('pseudogene'),
         'pseudogene'
     )
+    biotypes = biotypes.where(
+        ~biotypes.str.match('^(TR|IG)_[A-Z]_gene$'),
+        'IG_TR_gene'
+    )
     biotypes = biotypes.replace('protein_coding_CDS_not_defined', 'mRNA')
     biotypes = biotypes.replace(UNIFY_BIOTYPES)
     return biotypes
