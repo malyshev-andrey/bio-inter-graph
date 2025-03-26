@@ -7,6 +7,8 @@ import pandas as pd
 import networkx as nx
 from tqdm.auto import tqdm
 
+from biointergraph.ids_mapping.main import id2yagid
+
 from .encode import (
     load_encode_eclip_data,
     load_encode_rip_data,
@@ -20,7 +22,10 @@ from .protein import load_intact_interactions, load_biogrid_interactions, load_s
 from .rna_chrom import load_redc_redchip_data
 from .gtrd import load_gtrd_chip_seq_data
 from ..shared import memory
-from ..ids_mapping.protein import _build_yapid_graph
+from ..ids_mapping.protein import _build_yapid_graph, id2yapid
+from ..annotations import yalid2state
+from ..ids_mapping import id2yagid, id2yapid
+from ..ids_info import yagid2biotype
 
 
 def _remove_minor_components(graph):
@@ -164,8 +169,30 @@ def detect_communities(graph) -> pd.DataFrame:
     return result
 
 
-def describe_nodes(graph) -> pd.DataFrame:
+def describe_nodes(graph: nx.Graph) -> pd.DataFrame:
     result = pd.DataFrame(graph.degree(), columns=['node', 'degree'])
-    assert result['node'].str.match(r'^YA[GP]ID\d{7}$').all()
-    result['is_protein'] = result['node'].str.startswith('YAPID')
+    assert result['node'].str.match(r'^YA[GPL]ID\d{7}$').all()
+
+    result['type'] = result['node'].str[:5].map({
+        'YAPID': 'protein',
+        'YAGID': 'RNA',
+        'YALID': 'DNA'
+    })
+
+    ids_mapping = pd.concat([id2yagid(), id2yapid()])
+    ids_mapping.name = 'node'
+    ids_mapping = ids_mapping.to_frame().reset_index(names='id')
+
+    ids_mapping = ids_mapping.groupby('node')['id'].agg(pd.Series.to_list)
+
+    result['ids'] = result['node'].map(ids_mapping)
+
+    result['neighbors'] = result['node'].progress_apply(graph.neighbors)
+    result['neighbors'] = result['neighbors'].progress_apply(list)
+
+    result['subtype'] = result['type'].case_when([
+        (result['type'].eq('RNA'), yagid2biotype(result['node'])),
+        (result['type'].eq('DNA'), yalid2state(result['node']))
+    ])
+
     return result
