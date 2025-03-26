@@ -118,7 +118,7 @@ def _node_id2node_type(ids: pd.Series) -> pd.Series:
         'YAGID': 'RNA',
         'YALID': 'DNA'
     }
-    result = ids.map(prefix_map)
+    result = ids.str[:5].map(prefix_map)
     assert not result.isna().any()
 
     return result
