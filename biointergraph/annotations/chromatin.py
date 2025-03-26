@@ -1,3 +1,5 @@
+import hashlib
+
 import pandas as pd
 
 from ..shared import memory, BED_COLUMNS
@@ -101,5 +103,20 @@ def load_chromhmm_annotation(**kwargs):
     assert result['name'].str.len().eq(12).all()
 
     result['state'] = _collapse_chromhmm_states(result['state_full'])
+
+    assert hashlib.sha1(
+        pd.util.hash_pandas_object(result).values
+    ).hexdigest() == '67571154a03006c124f4b855eebdb16943fbeded'
+
+    return result
+
+
+def yalid2state(ids: pd.Series|None = None) -> pd.Series:
+    result = load_chromhmm_annotation()
+    result = result.set_index('name')
+    result = result['state']
+
+    if ids is not None:
+        result = ids.map(result)
 
     return result
