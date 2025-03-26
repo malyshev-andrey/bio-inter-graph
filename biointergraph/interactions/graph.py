@@ -238,3 +238,10 @@ def describe_nodes(graph: nx.Graph) -> pd.DataFrame:
     ])
 
     return result
+
+
+def id2subgraph(graph: nx.Graph, id: str) -> nx.Graph:
+    yagid = id2yagid()[id]
+    neighbors = list(graph.neighbors(yagid))
+    result = graph.subgraph(neighbors + [yagid])
+    return result
