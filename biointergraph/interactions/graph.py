@@ -112,13 +112,60 @@ def build_main_graph(max_workers: int = 2) -> nx.Graph:
     return graph
 
 
-def describe_graph(graph: nx.Graph):
-    print(f'Nodes: {graph.number_of_nodes()}')
-    print(f'Edges: {graph.number_of_edges()}')
+def _node_id2node_type(ids: pd.Series) -> pd.Series:
+    prefix_map = {
+        'YAPID': 'protein',
+        'YAGID': 'RNA',
+        'YALID': 'DNA'
+    }
+    result = ids.map(prefix_map)
+    assert not result.isna().any()
+
+    return result
+
+
+def _describe_nodes(graph: nx.Graph) -> pd.DataFrame:
+    result = pd.DataFrame(graph.degree(), columns=['node', 'degree'])
+    assert result['node'].str.match(r'^YA[GPL]ID\d{7}$').all()
+
+    result['type'] = _node_id2node_type(result['node'])
+
+    return result
+
+
+def _symmetric_crosstab(pairs: pd.DataFrame) -> pd.DataFrame:
+    assert pairs.shape[1] == 2
+
+    c1, c2 = pairs.columns
+    pairs = pd.concat([
+        pairs,
+        pairs[pairs[c1] != pairs[c2]].rename(columns={c1: c2, c2: c1})
+    ])
+
+    result = pd.crosstab(pairs[c1], pairs[c2])
+    return result
+
+
+def describe_graph(graph: nx.Graph) -> None:
+    nodes = _describe_nodes(graph)
+    print(f'Nodes: {nodes.shape[0]}')
+    print(pd.DataFrame({
+        'count': nodes['type'].value_counts(),
+        'frac':nodes['type'].value_counts(normalize=True)
+    }))
+
+    edges = pd.DataFrame(graph.edges(), columns=['source', 'target'])
+    print(f'Edges: {edges.shape[0]}')
+    edges['source_type'] = _node_id2node_type(edges['source'])
+    edges['target_type'] = _node_id2node_type(edges['target'])
+    print(_symmetric_crosstab(edges[['source_type', 'target_type']]))
+
     print('Degrees distribution:')
-    stats = pd.Series(dict(graph.degree())).describe()
+    stats = nodes['degree'].describe()
     print('\t' + str(stats[:10]).replace('\n', '\n\t'))
-    diameter_sample = [nx.approximation.diameter(graph) for _ in tqdm(range(10))]
+
+    iterator = tqdm(range(10)) if nodes.shape[0] > 10000 else range(10)
+    diameter_sample = [nx.approximation.diameter(graph) for _ in iterator]
     print(f'Diameter: {min(diameter_sample)}-{max(diameter_sample)}')
 
 
@@ -166,18 +213,13 @@ def detect_communities(graph) -> pd.DataFrame:
     go_terms = go_terms.tolist()
     result[['go_term', 'p_value']] = pd.DataFrame(go_terms)
 
+    result = result.sort_values('p_value')
+
     return result
 
 
 def describe_nodes(graph: nx.Graph) -> pd.DataFrame:
-    result = pd.DataFrame(graph.degree(), columns=['node', 'degree'])
-    assert result['node'].str.match(r'^YA[GPL]ID\d{7}$').all()
-
-    result['type'] = result['node'].str[:5].map({
-        'YAPID': 'protein',
-        'YAGID': 'RNA',
-        'YALID': 'DNA'
-    })
+    result = _describe_nodes(graph)
 
     ids_mapping = pd.concat([id2yagid(), id2yapid()])
     ids_mapping.name = 'node'
