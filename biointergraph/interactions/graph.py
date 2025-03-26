@@ -6,6 +6,7 @@ import requests
 import pandas as pd
 import networkx as nx
 from tqdm.auto import tqdm
+tqdm.pandas()
 
 from biointergraph.ids_mapping.main import id2yagid
 
