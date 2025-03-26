@@ -219,6 +219,31 @@ def detect_communities(graph) -> pd.DataFrame:
     return result
 
 
+def _node2neighbors_types(graph, binary: bool = False) -> pd.DataFrame:
+    edges = pd.DataFrame(graph.edges(), columns=['source', 'target'])
+
+    swap = {'target': 'source', 'source': 'target'}
+    edges = pd.concat([edges, edges.rename(columns=swap)])
+
+    self_loops = edges.drop_duplicates('source').copy()
+    self_loops['target'] = self_loops['source']
+    print(self_loops.shape)
+
+    edges = pd.concat([edges, self_loops])
+
+    edges['target'] = _node_id2node_type(edges['target'])
+
+    return edges
+
+    result = pd.crosstab(edges['source'], edges['target'])
+    if binary:
+        result = result > 0
+
+    result = result.reset_index(names='node')
+
+    return result
+
+
 def describe_nodes(graph: nx.Graph) -> pd.DataFrame:
     result = _describe_nodes(graph)
 
@@ -237,6 +262,13 @@ def describe_nodes(graph: nx.Graph) -> pd.DataFrame:
         (result['type'].eq('RNA'), yagid2biotype(result['node'])),
         (result['type'].eq('DNA'), yalid2state(result['node']))
     ])
+
+    result = result.merge(
+        _node2neighbors_types(graph),
+        how='left',
+        on='node',
+        validate='one_to_one'
+    )
 
     return result
 
