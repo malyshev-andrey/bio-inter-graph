@@ -6,7 +6,6 @@ import requests
 import pandas as pd
 import networkx as nx
 from tqdm.auto import tqdm
-tqdm.pandas()
 
 from biointergraph.ids_mapping.main import id2yagid
 
@@ -227,13 +226,10 @@ def _node2neighbors_types(graph, binary: bool = False) -> pd.DataFrame:
 
     self_loops = edges.drop_duplicates('source').copy()
     self_loops['target'] = self_loops['source']
-    print(self_loops.shape)
 
     edges = pd.concat([edges, self_loops])
 
     edges['target'] = _node_id2node_type(edges['target'])
-
-    return edges
 
     result = pd.crosstab(edges['source'], edges['target'])
     if binary:
@@ -255,6 +251,7 @@ def describe_nodes(graph: nx.Graph) -> pd.DataFrame:
 
     result['ids'] = result['node'].map(ids_mapping)
 
+    tqdm.pandas()
     result['neighbors'] = result['node'].progress_apply(graph.neighbors)
     result['neighbors'] = result['neighbors'].progress_apply(list)
 
