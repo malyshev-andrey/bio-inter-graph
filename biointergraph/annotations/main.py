@@ -2,6 +2,7 @@ from pathlib import Path
 from warnings import warn
 from typing import IO, Callable
 
+import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
@@ -178,8 +179,8 @@ def sanitize_bed(
     return None if inplace else bed
 
 
-def _row2intervals_factory(bin_size: int) -> Callable[[pd.Series], np.array]:
-    def _row2intervals(row: pd.Series) -> np.array:
+def _row2intervals_factory(bin_size: int) -> Callable[[pd.Series], tuple[np.array, np.array]]:
+    def _row2intervals(row: pd.Series) -> tuple[np.array, np.array]:
         starts = np.linspace(
             row['start'], row['end'],
             num=1 + max(1, (row['end'] - row['start']) // bin_size),
