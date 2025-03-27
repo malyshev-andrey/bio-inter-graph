@@ -72,7 +72,7 @@ def _load_encode_blacklist() -> pd.DataFrame:
 
 
 @memory.cache
-def load_chromhmm_annotation(split_bin: int|None = None) -> pd.DataFrame:
+def load_chromhmm_annotation(split_bin: int|None = 500) -> pd.DataFrame:
     REBUILD_CHROMHMM_ANNOTATION = False
 
     if split_bin == 500 and not REBUILD_CHROMHMM_ANNOTATION:
