@@ -2,99 +2,87 @@ import hashlib
 
 import pandas as pd
 
-from ..shared import memory, BED_COLUMNS
-from .main import sanitize_bed
-from .intersect import bed_intersect
+from ..shared import memory, BED_COLUMNS, GOOGLE_DRIVE_URL, _read_tsv
+from .main import sanitize_bed, _split_annotation_into_bins
+from .intersect import best_left_intersect
 
 
-def _collapse_spin_states(states: pd.Series) -> pd.Series:
-    result = states.replace(
-        '^Near_Lm.*', 'Near_Lm', regex=True
-    ).replace(
-        '^Interior_Act.*', 'Interior_Act', regex=True
-    ).replace(
-        '^Interior_Repr.*', 'Interior_Repr', regex=True
-    )
-    return result
+def _merge_spin_states(states: pd.Series) -> pd.Series:
+    states = states.case_when([
+        (states.str.match('^Near_Lm.*$'), 'Near_Lm'),
+        (states.str.match('^Interior_Act.*$'), 'Interior_Act'),
+        (states.str.match('^Interior_Repr.*$'), 'Interior_Repr')
+    ])
+
+    expected_states = [
+        'Interior_Act', 'Interior_Repr', 'Lamina',
+        'Lamina_Like', 'Near_Lm', 'Speckle'
+    ]
+    assert states.isin(expected_states).all()
+    assert states.nunique(dropna=False) == len(expected_states)
+    assert not states.isna().any()
+
+    return states
 
 
-def _load_spin_annotation(**kwargs) -> pd.DataFrame:
-    id = '1gdwtrhTctddO9TCBXBaZpZFOAHWCUTli'
-    url = f'https://drive.usercontent.google.com/download?id={id}&export=download&confirm=t'
-
-    default_kwargs = dict(
-        sep='\t',
+def _load_spin_annotation() -> pd.DataFrame:
+    result = _read_tsv(
+        GOOGLE_DRIVE_URL.format(id='1gdwtrhTctddO9TCBXBaZpZFOAHWCUTli'),
         header=None,
-        dtype='str',
-        names=BED_COLUMNS[:4]
+        names=BED_COLUMNS[:4],
+        chunksize=None
     )
-    default_kwargs.update(kwargs)
-
-    result = pd.read_csv(url, **default_kwargs)
-
-    result['start'] = result['start'].astype('int')
-    result['end'] = result['end'].astype('int')
-    assert (result['start'] < result['end']).all()
+    result = sanitize_bed(result)
 
     result = result.rename(columns={'name': 'SPIN_full'})
-    result['SPIN'] = _collapse_spin_states(result['SPIN_full'])
+    result['SPIN'] = _merge_spin_states(result['SPIN_full'])
 
     return result
 
 
-def _collapse_chromhmm_states(states: pd.Series) -> pd.Series:
-    result = states.replace(
-        r'^Enh.*', 'Enh', regex=True
-    ).replace(
-        r'^Tss.*', 'Tss', regex=True
-    ).replace(
-        r'^Tx.*', 'Tx', regex=True
-    ).replace(
-        r'^ReprPC.*', 'ReprPC', regex=True
-    ).replace(
-        'ZNF/Rpts', 'Quies'
-    )
+def _merge_chromhmm_states(states: pd.Series) -> pd.Series:
+    states = states.case_when([
+        (states.str.match(r'^Enh.*$'), 'Enh'),
+        (states.str.match(r'^Tss.*$'), 'Tss'),
+        (states.str.match(r'^Tx.*$'), 'Tx'),
+        (states.str.match(r'^ReprPC.*$'), 'ReprPC'),
+        (states.eq('ZNF/Rpts'), 'Quies')
+    ])
+
     expected_states = ['Enh', 'ReprPC', 'Tss', 'Tx', 'Quies', 'Het']
-    assert result.isin(expected_states).all()
-    return result
+    assert states.isin(expected_states).all()
+    assert states.nunique(dropna=False) == len(expected_states)
+    assert not states.isna().any()
+
+    return states
 
 
 @memory.cache
-def load_chromhmm_annotation(**kwargs):
-    url = 'https://personal.broadinstitute.org/cboix/epimap/ChromHMM/observed_aux_18_hg38/CALLS/BSS00762_18_CALLS_segments.bed.gz'
-    default_kwargs = dict(
-        sep='\t',
+def load_chromhmm_annotation(split_bin: int|None = None) -> pd.DataFrame:
+    result = _read_tsv(
+        'https://personal.broadinstitute.org/cboix/epimap/ChromHMM/observed_aux_18_hg38/CALLS/BSS00762_18_CALLS_segments.bed.gz',
         header=None,
         usecols=range(6),
-        names=BED_COLUMNS,
-        dtype='str'
+        names=BED_COLUMNS
     )
-    default_kwargs.update(kwargs)
-    result = pd.read_csv(url, **default_kwargs)
     result = sanitize_bed(result, stranded=False)
-    assert (result['start'] < result['end']).all()
-
-    assert result['score'].eq('0').all()
-    assert result['strand'].eq('.').all()
     result = result.drop(columns=['score', 'strand'])
 
-    columns_map = {f'{c}1': c for c in result.columns}
+    result = result.rename(columns={'name': 'state_full'})
+    result['state'] = _merge_chromhmm_states(result['state_full'])
 
-    n = result.shape[0]
+    if split_bin is not None:
+        result = _split_annotation_into_bins(result, bin_size=split_bin)
 
-    SPIN = _load_spin_annotation()
-    result = bed_intersect(
-        result, SPIN,
-        strandedness=None,
+    result = best_left_intersect(
+        result,
+        _load_spin_annotation(),
+        stranded=False,
         unify_chr_assembly='hg38',
-        jaccard=True,
-        how='left'
+        drop_duplicates=False
     )
-    result = result.rename(columns=columns_map)
 
-    result = result.sort_values('jaccard', ascending=False)
-    result = result.drop_duplicates(columns_map.values(), keep='first')
-    assert result.shape[0] == n
+    return result
 
     result = result.drop(columns=['start2', 'end2', 'Overlap', 'jaccard'])
 

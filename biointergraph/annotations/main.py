@@ -176,3 +176,40 @@ def sanitize_bed(
         assert bed['strand'].isin(strand_values).all()
 
     return None if inplace else bed
+
+
+def _row2intervals_factory(bin_size: int) -> Callable[[pd.Series], np.array]:
+    def _row2intervals(row: pd.Series) -> np.array:
+        starts = np.linspace(
+            row['start'], row['end'],
+            num=1 + max(1, (row['end'] - row['start']) // bin_size),
+            dtype='int'
+        )
+
+        return starts[:-1], np.roll(starts, -1)[:-1]
+
+    return _row2intervals
+
+
+def _split_annotation_into_bins(annotation: pd.DataFrame, bin_size: int) -> pd.DataFrame:
+    missing_columns = [c for c in ('start', 'end') if c not in annotation.columns]
+    if missing_columns:
+        raise ValueError(f'Missing required columns: {", ".join(missing_columns)}')
+    assert (annotation['end'] > annotation['start']).all()
+
+    result = annotation.copy()
+
+    tqdm.pandas(desc='Splitting annotation intervals')
+    result[['start', 'end']] = result.progress_apply(
+        _row2intervals_factory(bin_size),
+        result_type='expand',
+        axis=1
+    )
+    result = result.explode(['start', 'end'])
+    result = result.astype({'start': 'int', 'end': 'int'})
+
+    length = result['end'] - result['start']
+    assert length.between(1, 2 * bin_size - 1).all()
+    assert length.sum() == (annotation['end'] - annotation['start']).sum()
+
+    return result

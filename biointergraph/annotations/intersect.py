@@ -3,6 +3,7 @@ import pandas as pd
 import pyranges as pr
 
 from .ucsc import unify_chr
+from ..shared import BED_COLUMNS
 
 
 BED2RANGES = {
@@ -41,6 +42,7 @@ def bed_intersect(
         strandedness: str|None = 'same',
         unify_chr_assembly: str|None = None,
         jaccard: bool = False,
+        overlap: bool = True
         **kwargs
     ) -> pd.DataFrame:
     """
@@ -81,15 +83,13 @@ def bed_intersect(
 
     result = _bed2ranges(bed1).join(_bed2ranges(bed2), **default_kwargs).df
 
-
-    names_map = {
+    result = result.rename(columns={
         'Chromosome': 'chr',
         'Start': 'start1', 'End': 'end1', 'Name': 'name1',
         'Score': 'score1', 'Strand': 'strand1',
         'Start_b': 'start2', 'End_b': 'end2', 'Name_b': 'name2',
         'Score_b': 'score2', 'Strand_b': 'strand2'
-    }
-    result = result.rename(columns=names_map)
+    })
 
     if jaccard:
         union = (
@@ -103,6 +103,9 @@ def bed_intersect(
         assert (result['Overlap'] == intersect).all()
         result['jaccard'] = intersect / union
 
+    if not overlap:
+        result = result.drop(columns='Overlap')
+
     return result
 
 
@@ -112,4 +115,42 @@ def bed_merge(bed: pd.DataFrame, **kwargs) -> pd.DataFrame:
     result = result.merge(**kwargs)
 
     result = result.df.rename(columns=RANGES2BED)
+    return result
+
+
+def best_left_intersect(
+        bed1: pd.DataFrame, bed2: pd.DataFrame, *,
+        stranded: bool = True,
+        unify_chr_assembly: str|None = None,
+        jaccard: float|None = None,
+        drop_duplicates: bool = True,
+        **kwargs
+    ) -> pd.DataFrame:
+
+    result = bed_intersect(
+        bed1, bed2,
+        unify_chr_assembly=unify_chr_assembly,
+        strandedness = 'same' if stranded else None,
+        jaccard=True, overlap=False,
+        apply_strand_suffix=False,
+        how='left',
+        **kwargs
+    )
+    result = result.rename(columns={f'{c}1': c for c in BED_COLUMNS})
+    assert bed1.columns.isin(result.columns).all()
+    right_columns = [c for c in result.columns if c not in bed1.columns]
+
+    result.loc[result['start2'].eq(-1), right_columns] = float('nan')
+
+    if drop_duplicates:
+        result = result.sort_values('jaccard')
+        result = result.drop_duplicates(bed1.columns, keep='last')
+        assert result.shape[0] == bed1.shape[0]
+    else:
+        max_jaccard = result.groupby(bed1.columns)['jaccard'].transform('max')
+        result = result[(result['jaccard'] == max_jaccard) | result['jaccard'].isna()]
+
+    if jaccard is not None:
+        result.loc[result['jaccard'] < jaccard, right_columns] = float('nan')
+
     return result

@@ -4,7 +4,7 @@ from .refseq import load_refseq_annotation, load_refseq_bed
 from .extended import load_extended_annotation, extended_gene_id2ensembl_gene_id
 from .ucsc import fetch_ucsc_table, unify_chr
 from .gff2bed import gff2bed
-from .intersect import bed_intersect, bed_merge
+from .intersect import bed_intersect, bed_merge, best_left_intersect
 from .chromatin import load_chromhmm_annotation, yalid2state
 
 
@@ -15,6 +15,6 @@ __all__ = [
     'load_extended_annotation', 'extended_gene_id2ensembl_gene_id',
     'fetch_ucsc_table', 'unify_chr',
     'gff2bed',
-    'bed_intersect', 'bed_merge',
+    'bed_intersect', 'bed_merge', 'best_left_intersect',
     'load_chromhmm_annotation', 'yalid2state'
 ]
