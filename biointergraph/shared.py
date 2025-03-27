@@ -1,4 +1,5 @@
 import os
+import hashlib
 from pathlib import Path
 from typing import Callable, IO
 
@@ -69,4 +70,10 @@ def _read_tsv(
             progress_bar.update(chunk.shape[0])
             result.append(filter_func(chunk))
         result = pd.concat(result)
+    return result
+
+
+def _df_hash(df: pd.DataFrame) -> str:
+    result = pd.util.hash_pandas_object(df).values
+    result = hashlib.sha1(result).hexdigest()
     return result
