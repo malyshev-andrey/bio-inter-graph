@@ -42,7 +42,7 @@ def bed_intersect(
         strandedness: str|None = 'same',
         unify_chr_assembly: str|None = None,
         jaccard: bool = False,
-        overlap: bool = True
+        overlap: bool = True,
         **kwargs
     ) -> pd.DataFrame:
     """
