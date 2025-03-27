@@ -267,6 +267,8 @@ def describe_nodes(graph: nx.Graph) -> pd.DataFrame:
         validate='one_to_one'
     )
 
+    assert (result[['DNA', 'protein', 'RNA']].sum(axis=1) == (result['degree'] + 1)).all()
+
     return result
 
 
