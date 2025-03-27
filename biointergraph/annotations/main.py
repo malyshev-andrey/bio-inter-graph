@@ -155,7 +155,14 @@ def read_feature_table(
     return result
 
 
-def sanitize_bed(bed: pd.DataFrame, *, stranded: bool = True) -> pd.DataFrame:
+def sanitize_bed(
+        bed: pd.DataFrame, *,
+        stranded: bool = True,
+        inplace: bool = False
+    ) -> pd.DataFrame|None:
+    if not inplace:
+        bed = bed.copy()
+
     assert bed['start'].str.isdigit().all()
     bed['start'] = bed['start'].astype('int')
 
@@ -168,4 +175,4 @@ def sanitize_bed(bed: pd.DataFrame, *, stranded: bool = True) -> pd.DataFrame:
         strand_values = {'+', '-'} if stranded else {'+', '-', '.'}
         assert bed['strand'].isin(strand_values).all()
 
-    return bed
+    return None if inplace else bed
