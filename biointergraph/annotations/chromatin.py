@@ -78,23 +78,15 @@ def load_chromhmm_annotation(split_bin: int|None = None) -> pd.DataFrame:
         result,
         _load_spin_annotation(),
         stranded=False,
-        unify_chr_assembly='hg38',
-        drop_duplicates=False
+        unify_chr_assembly='hg38'
     )
 
-    return result
+    result = result.drop(columns=['start2', 'end2', 'jaccard'])
 
-    result = result.drop(columns=['start2', 'end2', 'Overlap', 'jaccard'])
-
-    result = result.rename(columns={'name': 'state_full'})
+    result = result.sort_values(['chr', 'start', 'end'])
+    result = result.reset_index(drop=True)
     result['name'] = 'YALID' + result.index.astype('str').str.zfill(7)
     assert result['name'].str.len().eq(12).all()
-
-    result['state'] = _collapse_chromhmm_states(result['state_full'])
-
-    assert hashlib.sha1(
-        pd.util.hash_pandas_object(result).values
-    ).hexdigest() == '67571154a03006c124f4b855eebdb16943fbeded'
 
     return result
 
