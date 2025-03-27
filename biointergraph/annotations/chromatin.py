@@ -63,10 +63,7 @@ def load_chromhmm_annotation(split_bin: int|None = None) -> pd.DataFrame:
 
     if split_bin == 500 and not REBUILD_CHROMHMM_ANNOTATION:
         with importlib.resources.open_binary('bio-inter-graph.static', 'chromhmm_500.tsv.gz') as file:
-            result = pd.read_csv(
-                file, compression='gzip',
-                sep='\t', header=None
-            )
+            result = pd.read_csv(file, compression='gzip', sep='\t')
 
         assert _df_hash(result) == 'e1f53aa30ad4c3303ae55fc0b5430daf8b8e379f'
 
