@@ -7,6 +7,9 @@ from .main import sanitize_bed, _split_annotation_into_bins
 from .intersect import best_left_intersect
 
 
+CHROMHMM_500_HASH = '0c795477cfc2cd3eb0884127b2f909e22745d9a0'
+
+
 def _merge_spin_states(states: pd.Series) -> pd.Series:
     states = states.case_when([
         (states.str.match('^Near_Lm.*$'), 'Near_Lm'),
@@ -76,7 +79,7 @@ def load_chromhmm_annotation(split_bin: int|None = None) -> pd.DataFrame:
         with importlib.resources.open_binary('bio-inter-graph.static', 'chromhmm_500.tsv.gz') as file:
             result = pd.read_csv(file, compression='gzip', sep='\t')
 
-        assert _df_hash(result) == 'e1f53aa30ad4c3303ae55fc0b5430daf8b8e379f'
+        assert _df_hash(result) == CHROMHMM_500_HASH
 
         return result
 
@@ -115,8 +118,8 @@ def load_chromhmm_annotation(split_bin: int|None = None) -> pd.DataFrame:
     result['name'] = 'YALID' + result.index.astype('str').str.zfill(7)
     assert result['name'].str.len().eq(12).all()
 
-    # if split_bin == 500:
-    #     assert _df_hash(result) == 'e1f53aa30ad4c3303ae55fc0b5430daf8b8e379f'
+    if split_bin == 500:
+        assert _df_hash(result) == CHROMHMM_500_HASH
 
     return result
 
