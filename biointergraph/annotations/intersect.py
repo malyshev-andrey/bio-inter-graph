@@ -138,16 +138,17 @@ def best_left_intersect(
     )
     result = result.rename(columns={f'{c}1': c for c in BED_COLUMNS})
     assert bed1.columns.isin(result.columns).all()
-    right_columns = [c for c in result.columns if c not in bed1.columns]
+    left_columns = list(bed1.columns)
+    right_columns = [c for c in result.columns if c not in left_columns]
 
     result.loc[result['start2'].eq(-1), right_columns] = float('nan')
 
     if drop_duplicates:
         result = result.sort_values('jaccard')
-        result = result.drop_duplicates(bed1.columns, keep='last')
+        result = result.drop_duplicates(left_columns, keep='last')
         assert result.shape[0] == bed1.shape[0]
     else:
-        max_jaccard = result.groupby(bed1.columns)['jaccard'].transform('max')
+        max_jaccard = result.groupby(left_columns)['jaccard'].transform('max')
         result = result[(result['jaccard'] == max_jaccard) | result['jaccard'].isna()]
 
     if jaccard is not None:
