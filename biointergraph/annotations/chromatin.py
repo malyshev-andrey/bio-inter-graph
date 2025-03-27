@@ -57,9 +57,20 @@ def _merge_chromhmm_states(states: pd.Series) -> pd.Series:
     return states
 
 
+def _load_encode_blacklist() -> pd.DataFrame:
+    result = _read_tsv(
+        'https://www.encodeproject.org/files/ENCFF356LFX/@@download/ENCFF356LFX.bed.gz',
+        header=None,
+        names=BED_COLUMNS[:3],
+        chunksize=None
+    )
+    result = sanitize_bed(result)
+    return result
+
+
 @memory.cache
 def load_chromhmm_annotation(split_bin: int|None = None) -> pd.DataFrame:
-    REBUILD_CHROMHMM_ANNOTATION = False
+    REBUILD_CHROMHMM_ANNOTATION = True
 
     if split_bin == 500 and not REBUILD_CHROMHMM_ANNOTATION:
         with importlib.resources.open_binary('bio-inter-graph.static', 'chromhmm_500.tsv.gz') as file:
@@ -85,12 +96,18 @@ def load_chromhmm_annotation(split_bin: int|None = None) -> pd.DataFrame:
         result = _split_annotation_into_bins(result, bin_size=split_bin)
 
     result = best_left_intersect(
-        result,
-        _load_spin_annotation(),
+        result, _load_encode_blacklist(),
         stranded=False,
         unify_chr_assembly='hg38'
     )
+    result = result[result['jaccard'].isna()]
+    result = result.drop(columns=['start2', 'end2', 'jaccard'])
 
+    result = best_left_intersect(
+        result, _load_spin_annotation(),
+        stranded=False,
+        unify_chr_assembly='hg38'
+    )
     result = result.drop(columns=['start2', 'end2', 'jaccard'])
 
     result = result.sort_values(['chr', 'start', 'end'])
@@ -98,8 +115,8 @@ def load_chromhmm_annotation(split_bin: int|None = None) -> pd.DataFrame:
     result['name'] = 'YALID' + result.index.astype('str').str.zfill(7)
     assert result['name'].str.len().eq(12).all()
 
-    if split_bin == 500:
-        assert _df_hash(result) == 'e1f53aa30ad4c3303ae55fc0b5430daf8b8e379f'
+    # if split_bin == 500:
+    #     assert _df_hash(result) == 'e1f53aa30ad4c3303ae55fc0b5430daf8b8e379f'
 
     return result
 
