@@ -146,7 +146,7 @@ def best_left_intersect(
     if drop_duplicates:
         result = result.sort_values('jaccard')
         result = result.drop_duplicates(left_columns, keep='last')
-        assert result.shape[0] == bed1.shape[0]
+        assert result.shape[0] == bed1.shape[0], f'{result.shape} {bed1.shape} {result["chr"].nunique()} {bed1["chr"].nunique()}'
     else:
         max_jaccard = result.groupby(left_columns, observed=True)['jaccard'].transform('max')
         result = result[(result['jaccard'] == max_jaccard) | result['jaccard'].isna()]
