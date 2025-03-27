@@ -59,7 +59,7 @@ def _merge_chromhmm_states(states: pd.Series) -> pd.Series:
 
 @memory.cache
 def load_chromhmm_annotation(split_bin: int|None = None) -> pd.DataFrame:
-    REBUILD_CHROMHMM_ANNOTATION = True
+    REBUILD_CHROMHMM_ANNOTATION = False
 
     if split_bin == 500 and not REBUILD_CHROMHMM_ANNOTATION:
         with importlib.resources.open_binary('bio-inter-graph.static', 'chromhmm_500.tsv.gz') as file:
