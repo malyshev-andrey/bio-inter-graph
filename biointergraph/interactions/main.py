@@ -3,7 +3,7 @@ import pandas as pd
 from scipy.stats import fisher_exact
 from tqdm.auto import tqdm
 
-from ..annotations import bed_intersect
+from ..annotations import bed_intersect, best_left_intersect
 from ..shared import BED_COLUMNS
 from ..ids_mapping import id2yapid, id2yagid
 
@@ -70,25 +70,16 @@ def _annotate_peaks(
         stranded: bool = True,
         convert_ids: bool = False
     ) -> pd.DataFrame:
-    result = bed_intersect(
-        peaks,
-        annotation,
-        unify_chr_assembly=assembly,
-        strandedness = 'same' if stranded else None,
-        apply_strand_suffix=False,
-        jaccard=True,
-        how='left'
+    result = best_left_intersect(
+        peaks, annotation,
+        stranded=stranded,
+        unify_chr_assembly=assembly
     )
 
-    no_intersect = result['start2'].eq(-1)
+    no_intersect = result['jaccard'].isna()
     if desc is not None:
         print(f'{desc} peaks without intersections: {no_intersect.sum()}')
     result = result[~no_intersect]
-
-    peak_id = {f'{c}1': c for c in BED_COLUMNS}
-    result = result.rename(columns=peak_id)
-    result = result.sort_values('jaccard')
-    result = result.drop_duplicates(peak_id.values(), keep='last')
 
     result = result[['name', 'name2']]
     result.columns = 'source', 'target'

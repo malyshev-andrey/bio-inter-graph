@@ -29,7 +29,6 @@ def load_redc_redchip_data() -> pd.DataFrame:
     cols = ['chr', 'start', 'end', 'name']
     result = result.rename(columns={f'{c}2': c for c in cols})
     result = result[cols]
-    result['score'], result['strand'] = 1000, '.'
 
     result = _annotate_peaks(
         result, load_chromhmm_annotation(),
