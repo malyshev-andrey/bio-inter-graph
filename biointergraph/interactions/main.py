@@ -68,12 +68,14 @@ def _annotate_peaks(
         assembly: str,
         desc: str|None = None,
         stranded: bool = True,
-        convert_ids: bool = False
+        convert_ids: bool = False,
+        **kwargs
     ) -> pd.DataFrame:
     result = best_left_intersect(
         peaks, annotation,
         stranded=stranded,
-        unify_chr_assembly=assembly
+        unify_chr_assembly=assembly,
+        **kwargs
     )
 
     no_intersect = result['jaccard'].isna()

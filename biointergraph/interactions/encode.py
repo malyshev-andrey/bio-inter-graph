@@ -245,7 +245,6 @@ def _load_encode_chip_seq_bed(assembly: str, cell_line: str|None = None) -> pd.D
     result = _encode_metadata2bed(metadata, stranded=False)
 
     result = bed_merge(result, by='Name')
-    result['score'], result['strand'] = 1000, '.'
 
     return result
 
@@ -259,7 +258,8 @@ def load_encode_chip_seq_data(assembly: str, cell_line: str|None = None) -> pd.D
         peaks, annotation,
         assembly='hg38',
         desc='ENCODE ChIP-seq',
-        stranded=False
+        stranded=False,
+        drop_duplicates=False
     )
 
     result['source'] = id2yapid('SYMBOL:' + result['source'], strict=True)
