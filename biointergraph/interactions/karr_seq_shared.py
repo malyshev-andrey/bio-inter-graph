@@ -1,5 +1,6 @@
 from itertools import count
 from urllib.error import HTTPError
+from http.client import IncompleteRead
 from time import sleep
 
 import requests
@@ -73,6 +74,7 @@ def _retrieve_karr_seq_metadata(cell_line: str|None = None, in_vivo: bool = True
 
 
 def _load_single_karr_seq(path, **kwargs) -> pd.DataFrame:
+    flag = False
     for i in count():
         try:
             result = _read_tsv(
@@ -87,10 +89,11 @@ def _load_single_karr_seq(path, **kwargs) -> pd.DataFrame:
                 **kwargs
             )
             break
-        except HTTPError as e:
-            print(repr(e), path)
-            print(f'Retry in {2**i}')
+        except (HTTPError, IncompleteRead) as e:
+            flag = True
+            print(f'{repr(e)}, retry in {2**i}s', end='; ')
             sleep(2**i)
+    if flag: print()
 
     assert 'pos1' not in result.columns or result['pos1'].str.isdigit().all()
     assert 'pos2' not in result.columns or result['pos2'].str.isdigit().all()
