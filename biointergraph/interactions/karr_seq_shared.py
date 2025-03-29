@@ -9,11 +9,11 @@ from ..shared import memory, CHUNKSIZE, _read_tsv
 
 
 @memory.cache
-def _retrieve_karr_seq_metadata(cell_line: str|None = None) -> pd.DataFrame:
-    metadata = pd.read_csv(
+def _retrieve_karr_seq_metadata(cell_line: str|None = None, in_vivo: bool = True) -> pd.DataFrame:
+    metadata = _read_tsv(
         'https://ftp.ncbi.nlm.nih.gov/geo/series/GSE166nnn/GSE166155/suppl/filelist.txt',
-        sep='\t',
-        usecols=['Name']
+        usecols=['Name'],
+        chunksize=None
     )['Name']
     metadata = metadata.set_axis(metadata)
     metadata = metadata[~metadata.eq('GSE166155_RAW.tar')]
@@ -38,13 +38,9 @@ def _retrieve_karr_seq_metadata(cell_line: str|None = None) -> pd.DataFrame:
     metadata['cell_line'] = metadata['conditions'].str.extract(cell_line_regex)['cell_line']
 
     in_vivo_conditions = [
-        'kethoxal-F123',
-        'kethoxal-HepG2-TotalRNA',
-        'kethoxal-K562-Nuclear',
-        'kethoxal-mESC',
-        'kethoxal-K562',
-        'kethoxal-HepG2',
-        'kethoxal-HEK293T'
+        'kethoxal-F123', 'kethoxal-HepG2-TotalRNA',
+        'kethoxal-K562-Nuclear', 'kethoxal-mESC',
+        'kethoxal-K562', 'kethoxal-HepG2', 'kethoxal-HEK293T'
     ]
 
     metadata['is_in_vivo'] = metadata['conditions'].isin(in_vivo_conditions)
@@ -60,19 +56,19 @@ def _retrieve_karr_seq_metadata(cell_line: str|None = None) -> pd.DataFrame:
             )
         metadata = metadata[metadata['cell_line'].eq(cell_line)]
 
-    metadata = metadata[metadata['is_in_vivo']]
+    if in_vivo:
+        metadata = metadata[metadata['is_in_vivo']]
 
     metadata['url'] = metadata.apply(
         lambda row: (
             f'https://ftp.ncbi.nlm.nih.gov/geo/samples'
-            f'/{row["accession"][:-3] + "nnn"}/{row["accession"]}/suppl/{row.name}'
+            f'/{row["accession"][:-3]}nnn/{row["accession"]}/suppl/{row.name}'
         ),
         axis=1
     )
     for url in metadata['url']:
         requests.head(url, allow_redirects=True, timeout=5).raise_for_status()
 
-    # metadata['url'] = metadata['url'].str.replace(r'https://', 'ftp://')
     return metadata
 
 

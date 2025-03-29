@@ -11,7 +11,7 @@ from tqdm.auto import tqdm
 
 from ..shared import BED_COLUMNS, _read_tsv, memory
 from .main import _annotate_peaks
-from ..annotations import load_chromhmm_annotation
+from ..annotations import load_chromhmm_annotation, sanitize_bed
 from ..ids_mapping import id2yapid
 
 
@@ -61,6 +61,7 @@ def _gtrd_metadata2bed(metadata: pd.DataFrame) -> pd.DataFrame:
     os.remove(converter.name)
 
     result['score'], result['strand'] = 1000, '.'
+    result = sanitize_bed(result, stranded=False)
     return result
 
 
