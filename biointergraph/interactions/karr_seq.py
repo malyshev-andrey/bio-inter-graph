@@ -41,17 +41,17 @@ def load_karr_seq_data(cell_line: str|None, pvalue: float|None = None) -> pd.Dat
     )
 
     if pvalue is not None:
-        data = data[data['pvalue'] < pvalue]
+        result = result[result['pvalue'] < pvalue]
 
-    data = pd.DataFrame({
-        'yagid1': id2yagid(data['seqid1'], strict=True),
-        'yagid2': id2yagid(data['seqid2'], strict=True)
+    result = pd.DataFrame({
+        'yagid1': id2yagid(result['seqid1'], strict=True),
+        'yagid2': id2yagid(result['seqid2'], strict=True)
     })
 
-    swap_mask = data['yagid1'] > data['yagid2']
-    data.loc[swap_mask, ['yagid1', 'yagid2']] = data.loc[swap_mask, ['yagid2', 'yagid1']].values
-    data = data[data['yagid1'] < data['yagid2']]
+    swap_mask = result['yagid1'] > result['yagid2']
+    result.loc[swap_mask, ['yagid1', 'yagid2']] = result.loc[swap_mask, ['yagid2', 'yagid1']].values
+    result = result[result['yagid1'] < result['yagid2']]
 
-    data = data.drop_duplicates()
+    result = result.drop_duplicates()
 
-    return data
+    return result
