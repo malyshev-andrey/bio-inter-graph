@@ -1,11 +1,11 @@
-from typing import Callable
+from itertools import count
 from urllib.error import HTTPError
 from time import sleep
 
 import requests
 import pandas as pd
 
-from ..shared import memory, CHUNKSIZE, _read_tsv
+from ..shared import memory, _read_tsv
 
 
 @memory.cache
@@ -72,18 +72,11 @@ def _retrieve_karr_seq_metadata(cell_line: str|None = None, in_vivo: bool = True
     return metadata
 
 
-def _load_single_karr_seq(
-        path, *,
-        filter_func: Callable = lambda df: df,
-        chunksize: int|None = CHUNKSIZE
-    ) -> pd.DataFrame:
-
-    i = 0
-    while True:
+def _load_single_karr_seq(path, **kwargs) -> pd.DataFrame:
+    for i in count():
         try:
             result = _read_tsv(
                 path,
-                filter_func=filter_func,
                 header=None,
                 names=[
                     'readID',
@@ -91,14 +84,13 @@ def _load_single_karr_seq(
                     'seqid2', 'pos2',
                     'strand1', 'strand2'
                 ],
-                chunksize=chunksize
+                **kwargs
             )
             break
         except HTTPError as e:
             print(repr(e), path)
             print(f'Retry in {2**i}')
             sleep(2**i)
-            i += 1
 
     assert 'pos1' not in result.columns or result['pos1'].str.isdigit().all()
     assert 'pos2' not in result.columns or result['pos2'].str.isdigit().all()
