@@ -1,44 +1,27 @@
 import pandas as pd
 
-from ..shared import memory, CHUNKSIZE
+from ..shared import memory
 from .main import summarize_pairwise
 from ..ids_mapping import id2yagid
 from .karr_seq_shared import _retrieve_karr_seq_metadata, _load_single_karr_seq
 
 
-def _load_karr_seq_data(
-        cell_line: str|None = None, *,
-        chunksize: int|None = CHUNKSIZE,
-        verbose: bool = True
-    ) -> pd.DataFrame:
-
+def _load_karr_seq_data(cell_line: str|None = None, **kwargs) -> pd.DataFrame:
     metadata = _retrieve_karr_seq_metadata(cell_line=cell_line)
 
-    data = []
+    result = []
     for _, row in metadata.iterrows():
-        if verbose:
-            print(row.cell_line, row.dendrimers, row.frac, row.repl, sep='-')
-            print(f'\tDownloading KARR-seq data from: {row.url}')
-
-        data.append(_load_single_karr_seq(
-            row.url,
+        data = _load_single_karr_seq(
+            row["url"],
             filter_func=lambda df: df[df['seqid1'] != df['seqid2']],
-            chunksize=chunksize
-        ))
-        data[-1]['dendrimers'] = row.dendrimers
-        data[-1]['repl'] = row.repl
-        data[-1]['frac'] = row.frac
-        data[-1]['cell_line'] = row.cell_line
+            **kwargs
+        )
+        for feature in ['dendrimers', 'repl', 'frac', 'cell_line']:
+            data[feature] = row[feature]
+        result.append(data)
+    result = pd.concat(result)
 
-        if verbose:
-            print(f'\tShape: {data[-1].shape}')
-
-    data = pd.concat(data)
-
-    if verbose:
-        print(f'Shape (total): {data.shape}')
-
-    return data
+    return result
 
 
 def _karr_seq_data2pairwise(data: pd.DataFrame) -> pd.DataFrame:
