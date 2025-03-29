@@ -25,41 +25,31 @@ def _load_karr_seq_data(cell_line: str|None = None, **kwargs) -> pd.DataFrame:
 
 
 @memory.cache
-def load_karr_seq_data(cell_line: str|None, pvalue: float|None):
+def load_karr_seq_data(cell_line: str|None, pvalue: float|None = None) -> pd.DataFrame:
     result = _load_karr_seq_data(cell_line=cell_line)
 
     assert (result['seqid1'] != result['seqid2']).all()
     result = result.groupby(
-        ['frac', 'cell_line'],
-        as_index=False
+        ['cell_line', 'frac']
     ).apply(
         lambda cell_line_frac: summarize_pairwise(
             cell_line_frac,
             ids=['seqid1', 'seqid2'],
             symmetrize=True,
-            n_repl=('repl', 'nunique')
+            pmi=False
         )
     )
 
-    return result
-
     if pvalue is not None:
         data = data[data['pvalue'] < pvalue]
-    data['yagid1'] = id2yagid(data['seqid1'])
-    data['yagid2'] = id2yagid(data['seqid2'])
 
-    assert (
-        data['yagid1'].str.startswith('YAGID').all() and
-        data['yagid2'].str.startswith('YAGID').all()
-    )
+    data = pd.DataFrame({
+        'yagid1': id2yagid(data['seqid1'], strict=True),
+        'yagid2': id2yagid(data['seqid2'], strict=True)
+    })
 
-    ids = ['yagid1', 'yagid2']
-    data = data[ids]
-    swap = dict(zip(ids, ids[::-1]))
-    data = pd.concat([
-        data,
-        data.rename(columns=swap)
-    ])
+    swap_mask = data['yagid1'] > data['yagid2']
+    data.loc[swap_mask, ['yagid1', 'yagid2']] = data.loc[swap_mask, ['yagid2', 'yagid1']].values
     data = data[data['yagid1'] < data['yagid2']]
 
     data = data.drop_duplicates()
