@@ -17,41 +17,54 @@ def _fisher_pvalue(row: pd.Series) -> float:
     return result
 
 
-def summarize_pairwise(pairs: pd.DataFrame, *, symmetrize: bool = False) -> pd.DataFrame:
-    if pairs.shape[1] != 2:
-        raise ValueError(f'Two columns are expected, found {raw_data.shape[1]}!')
-    id1, id2 = pairs.columns
+def summarize_pairwise(
+        data: pd.DataFrame,
+        ids: list[str], *,
+        symmetrize: bool = False,
+        fisher_pvalue: bool = True,
+        pmi: bool = True,
+        **kwargs
+    ) -> pd.DataFrame:
+    if len(ids) != 2:
+        raise ValueError(f'Two columns are expected, found {ids}!')
+    id1, id2 = ids
     assert id1 != id2
 
-    n_pairs = pairs.shape[0]
+    n_pairs = data.shape[0]
 
     if symmetrize:
-        pairs = pd.concat([
-            pairs,
-            pairs[pairs[id1] != pairs[id2]].rename(columns={id1: id2, id2: id1})
+        data = pd.concat([
+            data,
+            data[data[id1] != data[id2]].rename(columns={id1: id2, id2: id1})
         ])
 
-    result = pairs.groupby([id1, id2], as_index=False).size()
-    result['_freq1'] = result.groupby(id1)['size'].transform('sum')
-    result['_freq2'] = result.groupby(id2)['size'].transform('sum')
+    result = data.groupby([id1, id2], as_index=False).agg(size=(id1, 'size'), **kwargs)
+    if fisher_pvalue or pmi:
+        result['_freq1'] = result.groupby(id1)['size'].transform('sum')
+        result['_freq2'] = result.groupby(id2)['size'].transform('sum')
+        result['_overall'] = n_pairs
 
     if symmetrize:
         result = result[result[id1] <= result[id2]]
-
     assert result['size'].sum() == n_pairs
-    result['_overall'] = result['size'].sum()
 
-    result['PMI'] = np.log2(
-        result['size'] * result['_overall']
-        / (result['_freq1'] * result['_freq2'])
-    )
+    if pmi:
+        result['PMI'] = np.log2(
+            result['size'] * result['_overall']
+            / (result['_freq1'] * result['_freq2'])
+        )
 
-    result['_freq1'] -= result['size']
-    result['_freq2'] -= result['size']
-    result['_overall'] -= result['_freq1'] + result['_freq2'] + result['size']
+    if fisher_pvalue:
+        result['_freq1'] -= result['size']
+        result['_freq2'] -= result['size']
+        result['_overall'] -= result['_freq1'] + result['_freq2'] + result['size']
 
-    tqdm.pandas(desc="Fisher's Exact Test calculation")
-    result['pvalue'] = result.progress_apply(_fisher_pvalue, axis=1)
+        tqdm.pandas(desc="Fisher's Exact Test calculation")
+        result['pvalue'] = result.progress_apply(_fisher_pvalue, axis=1)
+
+    if fisher_pvalue or pmi:
+        result = result.drop(columns=['_freq1', '_freq2', '_overall'])
+
     return result
 
 
