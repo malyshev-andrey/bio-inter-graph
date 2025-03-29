@@ -25,7 +25,7 @@ def _load_karr_seq_data(cell_line: str|None = None, **kwargs) -> pd.DataFrame:
 
 
 @memory.cache
-def load_karr_seq_data(cell_line: str|None = None, pvalue: float|None):
+def load_karr_seq_data(cell_line: str|None, pvalue: float|None):
     result = _load_karr_seq_data(cell_line=cell_line)
 
     assert (result['seqid1'] != result['seqid2']).all()
