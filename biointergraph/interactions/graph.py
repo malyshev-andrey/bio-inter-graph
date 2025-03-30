@@ -48,7 +48,7 @@ def _wrapper(dataset: str, func: Callable, **kwargs) -> pd.DataFrame:
     return result
 
 
-def _remove_minor_components(graph):
+def _remove_minor_components(graph: nx.Graph) -> nx.Graph:
     sizes = [len(c) for c in nx.connected_components(graph)]
     if len(sizes) < 2:
         return graph
@@ -311,4 +311,5 @@ def _lighten_graph(graph: nx.Graph, *, inplace: bool = False) -> nx.Graph:
 def build_light_graph(max_workers: int = 2) -> nx.Graph:
     graph = build_main_graph(max_workers=max_workers)
     _lighten_graph(graph, inplace=True)
+    graph = _remove_minor_components(graph)
     return graph
