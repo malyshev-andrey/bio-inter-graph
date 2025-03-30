@@ -310,6 +310,7 @@ def _lighten_graph(graph: nx.Graph, *, inplace: bool = False) -> nx.Graph:
     return graph
 
 
+@memory.cache
 def build_light_graph(max_workers: int = 2) -> nx.Graph:
     if not REBUILD_LIGHT_GRAPH:
         with importlib.resources.open_binary('bio-inter-graph.static', 'edges_light.tsv.gz') as file:
