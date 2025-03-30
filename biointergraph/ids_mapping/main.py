@@ -88,3 +88,19 @@ def id2yagid(ids: pd.Series|None = None, *, strict: bool = False) -> pd.Series:
             assert not result.isna().any()
         result = result.combine_first(ids)
     return result
+
+
+def yagid2ids(yagid: str|list[str]|None = None, *, squeeze: bool = True) -> pd.Series|list[str]:
+    result = id2yagid()
+    if yagid is not None:
+        if isinstance(yagid, list):
+            result = result[result.isin(yagid)]
+        else:
+            assert isinstance(yagid, str)
+            result = result[result.eq(yagid)]
+    result = result.to_frame().reset_index(names='ids')
+    result = result.groupby('yagid')['ids'].agg(list)
+
+    if squeeze and isinstance(yagid, str):
+        result = result.item()
+    return result

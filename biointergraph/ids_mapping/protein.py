@@ -135,3 +135,19 @@ def id2yapid(ids: pd.Series|None = None, *, strict: bool = False) -> pd.Series:
             assert not result.isna().any()
         result = result.combine_first(ids)
     return result
+
+
+def yapid2ids(yapid: str|list[str]|None = None, *, squeeze: bool = True) -> pd.Series|list[str]:
+    result = id2yapid()
+    if yapid is not None:
+        if isinstance(yapid, list):
+            result = result[result.isin(yapid)]
+        else:
+            assert isinstance(yapid, str)
+            result = result[result.eq(yapid)]
+    result = result.to_frame().reset_index(names='ids')
+    result = result.groupby('yapid')['ids'].agg(list)
+
+    if squeeze and isinstance(yapid, str):
+        result = result.item()
+    return result
