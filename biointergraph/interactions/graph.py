@@ -322,7 +322,13 @@ def build_light_graph(max_workers: int = 2) -> nx.Graph:
     return graph
 
 
-def _graph2edges(graph: nx.Graph, data: bool = True) -> pd.DataFrame:
+def describe_edges(
+        graph: nx.Graph, *,
+        data: bool = True,
+        explode: bool = False,
+        types: bool = False
+    ) -> pd.DataFrame:
+    if explode: assert data
     if data:
         edges = []
         for source, target, attrs in tqdm(graph.edges(data=True), desc='Edges processing: '):
@@ -334,5 +340,13 @@ def _graph2edges(graph: nx.Graph, data: bool = True) -> pd.DataFrame:
     swap_mask = edges['source'] > edges['target']
     edges.loc[swap_mask, ['source', 'target']] = edges.loc[swap_mask, ['target', 'source']].values
     assert (edges['source'] < edges['target']).all()
+
+    if types:
+        edges['source_type'] = _node_id2node_type(edges['source'])
+        edges['target_type'] = _node_id2node_type(edges['target'])
+
+    if explode:
+        edges['dataset'] = edges['dataset'].str.split(',')
+        edges = edges.explode('dataset')
 
     return edges

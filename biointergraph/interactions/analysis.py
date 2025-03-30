@@ -2,7 +2,7 @@ import pandas as pd
 import networkx as nx
 from tqdm.auto import tqdm
 
-from .graph import describe_nodes, _node_id2node_type, _graph2edges
+from .graph import describe_nodes, describe_edges
 from .main import summarize_pairwise
 
 
@@ -51,12 +51,9 @@ def graph2rna_protein(graph: nx.Graph) -> pd.DataFrame:
 
 
 def graph_datasets_stats(graph: nx.Graph) -> pd.DataFrame:
-    edges = _graph2edges(graph)
+    edges = describe_edges(graph, explode=True, types=True)
     assert (edges['source'] < edges['target']).all()
-    edges['dataset'] = edges['dataset'].str.split(',')
-    edges = edges.explode('dataset')
-    edges['source_type'] = _node_id2node_type(edges['source'])
-    edges['target_type'] = _node_id2node_type(edges['target'])
+
     result = edges.groupby(
         ['source_type', 'target_type', 'dataset'],
         as_index=False,
@@ -87,4 +84,16 @@ def graph_datasets_stats(graph: nx.Graph) -> pd.DataFrame:
     result = result.join(metadata, on='dataset', how='left', validate='one_to_one')
     result = result.drop(columns='dataset')
     result = result.sort_values('interactions', ascending=False)
+    return result
+
+
+def graph_datasets_matrix(graph: nx.Graph) -> pd.DataFrame:
+    edges = describe_edges(graph, explode=True)
+    edges['_temp'] = True
+    result = edges.pivot(
+        index=['source', 'target'],
+        columns='dataset',
+        values='_temp'
+    )
+    result = result.fillna(False)
     return result

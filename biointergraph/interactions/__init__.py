@@ -16,12 +16,13 @@ from .protein import (
 from .graph import (
     build_main_graph, describe_graph,
     detect_communities, describe_nodes,
-    id2subgraph, build_light_graph
+    id2subgraph, build_light_graph,
+    describe_edges
 )
 from .rna_chrom import load_redc_redchip_data
 from .rna_protein import load_postar3_data, load_frip_seq_data
 from .gtrd import load_gtrd_chip_seq_data
-from .analysis import graph2rna_protein, graph_datasets_stats
+from .analysis import graph2rna_protein, graph_datasets_stats, graph_datasets_matrix
 
 
 __all__ = [
@@ -36,9 +37,9 @@ __all__ = [
     'load_biogrid_interactions',
     'load_intact_interactions',
     'build_main_graph', 'describe_graph', 'detect_communities',
-    'describe_nodes', 'id2subgraph', 'build_light_graph',
+    'describe_nodes', 'id2subgraph', 'build_light_graph', 'describe_edges',
     'load_redc_redchip_data',
     'load_postar3_data', 'load_frip_seq_data',
     'load_gtrd_chip_seq_data',
-    'graph2rna_protein', 'graph_datasets_stats'
+    'graph2rna_protein', 'graph_datasets_stats', 'graph_datasets_matrix'
 ]
