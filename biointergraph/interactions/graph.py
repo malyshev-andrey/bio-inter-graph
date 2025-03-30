@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from time import sleep
 import importlib.resources
+from typing import Callable
 
 import requests
 import pandas as pd
@@ -26,6 +27,25 @@ from ..ids_mapping.protein import _build_yapid_graph, id2yapid
 from ..annotations import yalid2state
 from ..ids_mapping import id2yagid, id2yapid
 from ..ids_info import yagid2biotype
+
+
+def _wrapper(dataset: str, func: Callable, **kwargs) -> pd.DataFrame:
+    result = func(**kwargs)
+    result = result.reset_index(drop=True)
+    assert result.shape[1] == 2
+    result.columns = 'source', 'target'
+    assert (result['source'] != result['target']).all()
+
+    n_pairs = result.shape[0]
+    swap_mask = result['source'] > result['target']
+    result.loc[swap_mask, ['source', 'target']] = result.loc[swap_mask, ['target', 'source']].values
+    assert (result['source'] < result['target']).all()
+    assert not result.duplicated().any()
+
+    result['dataset'] = dataset
+    assert result.shape[0] == n_pairs
+
+    return result
 
 
 def _remove_minor_components(graph):
@@ -66,44 +86,43 @@ def build_main_graph(max_workers: int = 2) -> nx.Graph:
 
 
     data = [
-        (load_encode_eclip_data, dict(assembly='hg38', annotation='gencode', cell_line='K562')),
-        (load_encode_rip_data, dict(annotation='gencode', cell_line='K562')),
-        (load_encode_iclip_data, dict(annotation='gencode', cell_line='K562')),
-        (load_postar3_data, dict(species='human', cell_line='K562', annotation='gencode')),
-        (load_frip_seq_data, dict()),
-        (load_ric_seq_data, dict(pvalue=0.05)),
-        (load_karr_seq_data, dict(pvalue=0.05)),
-        (load_intact_interactions, dict()),
-        (load_biogrid_interactions, dict()),
-        (load_string_interactions, dict(min_score=700)),
-        (load_encode_chip_seq_data, dict(assembly='hg38', cell_line='K562')),
-        (load_redc_redchip_data, dict()),
-        (load_gtrd_chip_seq_data, dict(cell_line='K562'))
+        ('ENCODE eCLIP', load_encode_eclip_data, dict(assembly='hg38', annotation='gencode', cell_line='K562')),
+        ('ENCODE RIP', load_encode_rip_data, dict(annotation='gencode', cell_line='K562')),
+        ('ENCODE iCLIP', load_encode_iclip_data, dict(annotation='gencode', cell_line='K562')),
+        ('POSTAR3', load_postar3_data, dict(species='human', cell_line='K562', annotation='gencode')),
+        ('fRIP-seq', load_frip_seq_data, dict()),
+        ('RIC-seq', load_ric_seq_data, dict(pvalue=0.05)),
+        ('KARR-seq', load_karr_seq_data, dict(pvalue=0.05)),
+        ('IntAct', load_intact_interactions, dict()),
+        ('BioGRID', load_biogrid_interactions, dict()),
+        ('STRING', load_string_interactions, dict(min_score=700)),
+        ('ENCODE ChIP-seq', load_encode_chip_seq_data, dict(assembly='hg38', cell_line='K562')),
+        ('Red-C & RedChIP', load_redc_redchip_data, dict()),
+        ('GTRD', load_gtrd_chip_seq_data, dict(cell_line='K562'))
     ]
 
     tqdm_kwargs = dict(total=len(data), unit='source', desc='Collecting data: ')
     if max_workers > 1:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
-            for func, kwargs in data:
-                futures.append(executor.submit(func, **kwargs))
+            for dataset, func, kwargs in data:
+                futures.append(executor.submit(_wrapper, dataset, func, **kwargs))
                 sleep(1)
 
             data = [f.result() for f in tqdm(as_completed(futures), **tqdm_kwargs)]
 
     else:
-        data = [func(**kwargs) for func, kwargs in tqdm(data, **tqdm_kwargs)]
-
-    for df in data:
-        assert df.shape[1] == 2
-        df.columns = 'source', 'target'
+        data = [_wrapper(dataset, func, **kwargs) for dataset, func, kwargs in tqdm(data, **tqdm_kwargs)]
 
     data = pd.concat(data)
+    assert not data.duplicated().any()
 
-    assert data.shape[1] == 2
+    assert data.shape[1] == 3
     regex = r'^YA[LPG]ID\d{7}$'
     assert data['source'].str.match(regex).all()
     assert data['target'].str.match(regex).all()
+
+    data = data.groupby(['source', 'target'], as_index=False, observed=True)['dataset'].agg(','.join)
 
     graph = nx.from_pandas_edgelist(data)
 

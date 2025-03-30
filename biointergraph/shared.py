@@ -97,7 +97,7 @@ def _read_tsv(
     read_csv_kwargs.update(kwargs)
 
     if isinstance(filepath_or_buffer, str):
-        desc = desc or filepath_or_buffer
+        desc = desc or filepath_or_buffer.split('://')[1]
         if chunksize is not None and filepath_or_buffer.startswith('http'):
             if 'compression' not in read_csv_kwargs:
                 if filepath_or_buffer.endswith('.gz'):
