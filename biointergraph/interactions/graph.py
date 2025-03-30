@@ -92,7 +92,7 @@ def build_main_graph(max_workers: int = 2) -> nx.Graph:
         ('POSTAR3', load_postar3_data, dict(species='human', cell_line='K562', annotation='gencode')),
         ('fRIP-seq', load_frip_seq_data, dict()),
         ('RIC-seq', load_ric_seq_data, dict(pvalue=0.05)),
-        ('KARR-seq', load_karr_seq_data, dict(pvalue=0.05)),
+        ('KARR-seq', load_karr_seq_data, dict(cell_line='K562', pvalue=0.05)),
         ('IntAct', load_intact_interactions, dict()),
         ('BioGRID', load_biogrid_interactions, dict()),
         ('STRING', load_string_interactions, dict(min_score=700)),
