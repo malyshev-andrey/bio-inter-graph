@@ -77,6 +77,8 @@ def _annotate_peaks(
         convert_ids: bool = False,
         **kwargs
     ) -> pd.DataFrame:
+    peaks = peaks.drop_duplicates()
+
     result = best_left_intersect(
         peaks, annotation,
         stranded=stranded,
