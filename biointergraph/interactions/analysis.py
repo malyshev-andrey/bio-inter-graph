@@ -2,7 +2,7 @@ import pandas as pd
 import networkx as nx
 from tqdm.auto import tqdm
 
-from .graph import describe_nodes, describe_edges
+from .graph import describe_nodes, describe_edges, _symmetric_crosstab
 from .main import summarize_pairwise
 
 
@@ -97,4 +97,10 @@ def graph_datasets_matrix(graph: nx.Graph) -> pd.DataFrame:
         values='_temp'
     ).reset_index(drop=True).fillna(False)
 
+    return result
+
+
+def graph_nodes_types_matrix(graph: nx.Graph) -> pd.DataFrame:
+    edges = describe_edges(graph, types=True)
+    result = _symmetric_crosstab(edges[['source_type', 'target_type']])
     return result
