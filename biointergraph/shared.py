@@ -7,6 +7,7 @@ from joblib import Memory
 import requests
 import pandas as pd
 from tqdm.auto import tqdm
+from zipfile import is_zipfile
 
 # schemas
 GFF_COLUMNS = [
@@ -98,7 +99,8 @@ def _read_tsv(
 
     if isinstance(filepath_or_buffer, str):
         desc = desc or filepath_or_buffer.split('://')[-1]
-        if chunksize is not None and filepath_or_buffer.startswith('http'):
+        is_zip = read_csv_kwargs.get('compression', filepath_or_buffer[-3:]) == 'zip'
+        if chunksize is not None and filepath_or_buffer.startswith('http') and not is_zip:
             if 'compression' not in read_csv_kwargs:
                 if filepath_or_buffer.endswith('.gz'):
                     read_csv_kwargs['compression'] = 'gzip'
