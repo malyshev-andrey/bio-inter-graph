@@ -292,3 +292,23 @@ def id2subgraph(graph: nx.Graph, id: str) -> nx.Graph:
     neighbors = list(graph.neighbors(yagid))
     result = graph.subgraph(neighbors + [yagid])
     return result
+
+
+def _lighten_graph(graph: nx.Graph, *, inplace: bool = False) -> nx.Graph:
+    if not inplace:
+        graph = graph.copy()
+
+    nodes = describe_nodes(graph)
+    nodes_to_remove = (
+        (nodes['degree'].eq(1) & nodes['type'].eq('DNA'))
+        | nodes['subtype'].eq('mRNA')
+    )
+    nodes_to_remove = nodes.loc[nodes_to_remove, 'node']
+    graph.remove_nodes_from(nodes_to_remove)
+    return graph
+
+
+def build_light_graph(max_workers: int = 2) -> nx.Graph:
+    graph = build_main_graph(max_workers=max_workers)
+    _lighten_graph(graph, inplace=True)
+    return graph
