@@ -261,31 +261,26 @@ def describe_nodes(
     ) -> pd.DataFrame:
     result = _describe_nodes(graph)
 
-    ids_mapping = pd.concat([id2yagid(), id2yapid()])
-    ids_mapping.name = 'node'
-    ids_mapping = ids_mapping.to_frame().reset_index(names='id')
+    result['ids'] = result['node'].map(pd.concat([yagid2ids(), yapid2ids()]))
 
-    ids_mapping = ids_mapping.groupby('node')['id'].agg(pd.Series.to_list)
-
-    result['ids'] = result['node'].map(ids_mapping)
-
-    tqdm.pandas()
+    tqdm.pandas('Nodes processing: ')
     result['neighbors'] = result['node'].progress_apply(graph.neighbors)
     result['neighbors'] = result['neighbors'].progress_apply(list)
 
-    result['subtype'] = result['type'].case_when([
-        (result['type'].eq('RNA'), yagid2biotype(result['node'])),
-        (result['type'].eq('DNA'), yalid2state(result['node']))
-    ])
+    if subtypes:
+        result['subtype'] = result['type'].case_when([
+            (result['type'].eq('RNA'), yagid2biotype(result['node'])),
+            (result['type'].eq('DNA'), yalid2state(result['node']))
+        ])
 
-    result = result.merge(
-        _node2neighbors_types(graph),
-        how='left',
-        on='node',
-        validate='one_to_one'
-    )
-
-    assert (result[['DNA', 'protein', 'RNA']].sum(axis=1) == (result['degree'] + 1)).all()
+    if neighbors_types:
+        result = result.merge(
+            _node2neighbors_types(graph),
+            how='left',
+            on='node',
+            validate='one_to_one'
+        )
+        assert (result[['DNA', 'protein', 'RNA']].sum(axis=1) - result['degree']).eq(1).all()
 
     return result
 
