@@ -2,7 +2,7 @@ import pandas as pd
 import networkx as nx
 from tqdm.auto import tqdm
 
-from .graph import describe_nodes
+from .graph import describe_nodes, _node_id2node_type, _graph2edges
 from .main import summarize_pairwise
 
 
@@ -47,4 +47,44 @@ def graph2rna_protein(graph: nx.Graph) -> pd.DataFrame:
     result = result.merge(edges, how='left', validate='one_to_one')
     result['is_direct'] = result['is_direct'].fillna(False).infer_objects()
 
+    return result
+
+
+def graph_datasets_stats(graph: nx.Graph) -> pd.DataFrame:
+    edges = _graph2edges(graph)
+    assert (edges['source'] < edges['target']).all()
+    edges['dataset'] = edges['dataset'].str.split(',')
+    edges = edges.explode('dataset')
+    edges['source_type'] = _node_id2node_type(edges['source'])
+    edges['target_type'] = _node_id2node_type(edges['target'])
+    result = edges.groupby(
+        ['source_type', 'target_type', 'dataset'],
+        as_index=False,
+        observed=True
+    ).agg(
+        interactions=('dataset', 'size'),
+        n_sources=('source', 'nunique'),
+        n_targets=('target', 'nunique')
+    )
+    index =                ['Source',     'Protocol/Database',       'Cell line', 'Annotation',        'Assembly']
+    metadata = {
+        'ENCODE ChIP-seq': ['ENCODE',     'ChIP-seq',                'K562',      'GENCODE',           'hg38'    ],
+        'Red-C & RedChIP': ['GEO/BaRDIC', 'Red-C & RedChIP (input)', 'K562',      'Extended/ChromHMM', 'hg38'    ],
+        'GTRD':            ['GTRD',       'ChIP-seq meta-clusters',  'K562',      'ChromHMM',          'hg38'    ],
+        'RIC-seq':         ['GSE190214',  'RIC-seq',                 'K562',      'Extended/GENCODE',  'hg38'    ],
+        'POSTAR3':         ['POSTAR3',    'Database',                'K562',      'GENCODE',           'hg38'    ],
+        'KARR-seq':        ['GSE166155',  'KARR-seq',                'K562',      'RefSeq',            'hg19'    ],
+        'ENCODE eCLIP':    ['ENCODE',     'eCLIP',                   'K562',      'GENCODE',           'hg38'    ],
+        'IntAct':          ['IntAct',     'Database',                'Human',     '-',                 '-'       ],
+        'BioGRID':         ['BioGRID',    'Database',                'Human',     '-',                 '-'       ],
+        'STRING':          ['STRING',     'Database',                'Human',     '-',                 '-'       ],
+        'fRIP-seq':        ['GSE67963',   'fRIP-seq',                'K562',      'GENCODE',           'hg19'    ],
+        'ENCODE RIP':      ['ENCODE',     'RIP-seq & RIP-chip',      'K562',      'GENCODE',           'hg19'    ],
+        'ENCODE iCLIP':    ['ENCODE',     'iCLIP',                   'K562',      'GENCODE',           'hg19'    ]
+    }
+    metadata = pd.DataFrame(metadata, index=index).T
+
+    result = result.join(metadata, on='dataset', how='left', validate='one_to_one')
+    result = result.drop(columns='dataset')
+    result = result.sort_values('interactions', ascending=False)
     return result

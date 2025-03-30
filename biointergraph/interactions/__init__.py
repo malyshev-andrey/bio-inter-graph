@@ -21,7 +21,7 @@ from .graph import (
 from .rna_chrom import load_redc_redchip_data
 from .rna_protein import load_postar3_data, load_frip_seq_data
 from .gtrd import load_gtrd_chip_seq_data
-from .analysis import graph2rna_protein
+from .analysis import graph2rna_protein, graph_datasets_stats
 
 
 __all__ = [
@@ -40,5 +40,5 @@ __all__ = [
     'load_redc_redchip_data',
     'load_postar3_data', 'load_frip_seq_data',
     'load_gtrd_chip_seq_data',
-    'graph2rna_protein'
+    'graph2rna_protein', 'graph_datasets_stats'
 ]

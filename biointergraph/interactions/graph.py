@@ -320,3 +320,19 @@ def build_light_graph(max_workers: int = 2) -> nx.Graph:
     _lighten_graph(graph, inplace=True)
     graph = _remove_minor_components(graph)
     return graph
+
+
+def _graph2edges(graph: nx.Graph, data: bool = True) -> pd.DataFrame:
+    if data:
+        edges = []
+        for source, target, attrs in tqdm(graph.edges(data=True), desc='Edges processing: '):
+            edges.append((source, target, attrs['dataset']))
+        edges = pd.DataFrame(edges, columns=['source', 'target', 'dataset'])
+    else:
+        edges = pd.DataFrame(graph.edges(), columns=['source', 'target'])
+
+    swap_mask = edges['source'] > edges['target']
+    edges.loc[swap_mask, ['source', 'target']] = edges.loc[swap_mask, ['target', 'source']].values
+    assert (edges['source'] < edges['target']).all()
+
+    return edges
