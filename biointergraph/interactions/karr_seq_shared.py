@@ -1,6 +1,5 @@
 from itertools import count
-from urllib.error import HTTPError
-from http.client import IncompleteRead, RemoteDisconnected
+from requests.exceptions import HTTPError
 from time import sleep
 
 import requests
@@ -89,7 +88,7 @@ def _load_single_karr_seq(path, **kwargs) -> pd.DataFrame:
                 **kwargs
             )
             break
-        except (HTTPError, IncompleteRead, RemoteDisconnected) as e:
+        except HTTPError as e:
             flag = True
             print(f'{repr(e)}, retry in {2**i}s', end='; ')
             sleep(2**i)
