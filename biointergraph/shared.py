@@ -51,7 +51,7 @@ class HttpFileReader:
         def reader():
             response = requests.get(url, stream=True)
             response.raise_for_status()
-            size = int(response.headers['Content-Length'])
+            size = int(response.headers.get('Content-Length', 0))
             with tqdm(desc=desc, total=size, unit='B', unit_scale=True) as progress_bar:
                 for chunk in response.iter_content(chunk_size=chunk_size):
                     progress_bar.update(len(chunk))
