@@ -70,7 +70,7 @@ def _remove_minor_components(graph):
 
 @memory.cache
 def build_main_graph(max_workers: int = 2) -> nx.Graph:
-    REBUILD_MAIN_GRAPH = False
+    REBUILD_MAIN_GRAPH = True
 
     if not REBUILD_MAIN_GRAPH:
         with importlib.resources.open_binary('bio-inter-graph.static', 'edges.tsv.gz') as file:
