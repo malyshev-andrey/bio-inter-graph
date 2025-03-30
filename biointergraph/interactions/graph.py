@@ -70,17 +70,13 @@ def _remove_minor_components(graph):
 
 @memory.cache
 def build_main_graph(max_workers: int = 2) -> nx.Graph:
-    REBUILD_MAIN_GRAPH = True
+    REBUILD_MAIN_GRAPH = False
 
     if not REBUILD_MAIN_GRAPH:
         with importlib.resources.open_binary('bio-inter-graph.static', 'edges.tsv.gz') as file:
-            result = pd.read_csv(
-                file, compression='gzip',
-                sep='\t', header=None,
-                names=['source', 'target']
-            )
+            result = pd.read_csv(file, compression='gzip', sep='\t', dtype='str')
 
-        result = nx.from_pandas_edgelist(result)
+        result = nx.from_pandas_edgelist(result, edge_attr='dataset')
 
         return result
 
@@ -101,7 +97,7 @@ def build_main_graph(max_workers: int = 2) -> nx.Graph:
         ('GTRD', load_gtrd_chip_seq_data, dict(cell_line='K562'))
     ]
 
-    tqdm_kwargs = dict(total=len(data), unit='source', desc='Collecting data: ')
+    tqdm_kwargs = dict(total=len(data), unit='dataset', desc='Collecting data: ')
     if max_workers > 1:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
