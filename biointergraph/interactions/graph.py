@@ -8,8 +8,6 @@ import pandas as pd
 import networkx as nx
 from tqdm.auto import tqdm
 
-from biointergraph.ids_mapping.main import id2yagid
-
 from .encode import (
     load_encode_eclip_data,
     load_encode_rip_data,
@@ -23,9 +21,8 @@ from .protein import load_intact_interactions, load_biogrid_interactions, load_s
 from .rna_chrom import load_redc_redchip_data
 from .gtrd import load_gtrd_chip_seq_data
 from ..shared import memory
-from ..ids_mapping.protein import _build_yapid_graph, id2yapid
 from ..annotations import yalid2state
-from ..ids_mapping import id2yagid, id2yapid
+from ..ids_mapping import id2yagid, id2yapid, yagid2ids, yapid2ids
 from ..ids_info import yagid2biotype
 
 
@@ -191,8 +188,8 @@ def _community2enrichment(nodes: list[str]) -> tuple[str, float]:
     if not nodes:
         return '', 1
 
-    id2yapid = _build_yapid_graph()
-    ids = pd.Series(id2yapid[id2yapid.isin(nodes)].index)
+    ids = yapid2ids(nodes)
+    ids = ids.explode()
     ids = ids.str.removeprefix('SYMBOL:')
 
     response = requests.post(
@@ -257,7 +254,11 @@ def _node2neighbors_types(graph, binary: bool = False) -> pd.DataFrame:
     return result
 
 
-def describe_nodes(graph: nx.Graph) -> pd.DataFrame:
+def describe_nodes(
+        graph: nx.Graph, *,
+        subtypes: bool = True,
+        neighbors_types: bool = True
+    ) -> pd.DataFrame:
     result = _describe_nodes(graph)
 
     ids_mapping = pd.concat([id2yagid(), id2yapid()])
