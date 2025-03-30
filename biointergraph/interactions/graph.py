@@ -124,7 +124,7 @@ def build_main_graph(max_workers: int = 2) -> nx.Graph:
 
     data = data.groupby(['source', 'target'], as_index=False, observed=True)['dataset'].agg(','.join)
 
-    graph = nx.from_pandas_edgelist(data)
+    graph = nx.from_pandas_edgelist(data, edge_attr='dataset')
 
     graph = _remove_minor_components(graph)
 
