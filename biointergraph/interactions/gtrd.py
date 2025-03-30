@@ -22,7 +22,13 @@ def _bigbed2bed(path_or_url: str, name: str, *, converter: str) -> pd.DataFrame:
     cmd = f'{converter} {path_or_url} {bed.name}'
     subprocess.run(shlex.split(cmd), check=True)
 
-    result = pd.read_csv(bed.name, sep='\t', header=None, usecols=range(6), names=BED_COLUMNS)
+    result = _read_tsv(
+        bed.name,
+        header=None,
+        usecols=range(6),
+        names=BED_COLUMNS,
+        chunksize=None
+    )
     result['name'] = name
 
     os.remove(bed.name)
