@@ -89,11 +89,12 @@ def graph_datasets_stats(graph: nx.Graph) -> pd.DataFrame:
 
 def graph_datasets_matrix(graph: nx.Graph) -> pd.DataFrame:
     edges = describe_edges(graph, explode=True)
+
     edges['_temp'] = True
     result = edges.pivot(
         index=['source', 'target'],
         columns='dataset',
         values='_temp'
-    )
-    result = result.fillna(False)
+    ).reset_index(drop=True).fillna(False)
+
     return result
