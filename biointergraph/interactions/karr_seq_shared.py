@@ -1,5 +1,5 @@
 from itertools import count
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, ChunkedEncodingError
 from time import sleep
 
 import requests
@@ -88,7 +88,7 @@ def _load_single_karr_seq(path, **kwargs) -> pd.DataFrame:
                 **kwargs
             )
             break
-        except HTTPError as e:
+        except (HTTPError, ChunkedEncodingError) as e:
             flag = True
             print(f'{repr(e)}, retry in {2**i}s', end='; ')
             sleep(2**i)
