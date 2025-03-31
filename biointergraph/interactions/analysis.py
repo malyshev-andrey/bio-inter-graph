@@ -1,3 +1,5 @@
+from typing import Literal
+
 import pandas as pd
 import networkx as nx
 from tqdm.auto import tqdm
@@ -50,7 +52,7 @@ def graph2rna_protein(graph: nx.Graph) -> pd.DataFrame:
     return result
 
 
-def graph_datasets_stats(graph: nx.Graph) -> pd.DataFrame:
+def graph_datasets_stats(graph: nx.Graph, *, latex: Literal['en', 'ru']|None = None) -> pd.DataFrame:
     edges = describe_edges(graph, explode=True, types=True)
     assert (edges['source'] < edges['target']).all()
 
@@ -84,6 +86,49 @@ def graph_datasets_stats(graph: nx.Graph) -> pd.DataFrame:
     result = result.join(metadata, on='dataset', how='left', validate='one_to_one')
     result = result.drop(columns='dataset')
     result = result.sort_values('interactions', ascending=False)
+
+    if latex is None:
+        return result
+
+    names_map = {
+        'en': [
+            ('Source', 'Source'),
+            ('Protocol/Database', 'Protocol/Database'),
+            ('Cell line', 'Cell line'),
+            ('Annotation', 'Annotation'),
+            ('Assembly', 'Assembly'),
+            ('interactions', 'Interactions'),
+            ('n_sources', '#1'),
+            ('source_type', 'Type 1'),
+            ('n_targets', '#2'),
+            ('target_type', 'Type 2')
+        ],
+        'ru': [
+            ('Source', 'Источник'),
+            ('Protocol/Database', 'Протокол/База данных'),
+            ('Cell line', 'Линия клеток'),
+            ('Annotation', 'Аннотация'),
+            ('Assembly', 'Сборка'),
+            ('interactions', 'Контакты'),
+            ('n_sources', '#1'),
+            ('source_type', 'Тип 1'),
+            ('n_targets', '#2'),
+            ('target_type', 'Тип 2')
+        ]
+    }[latex]
+    result = result.astype({
+        'interactions': 'float',
+        'n_sources': 'float',
+        'n_targets': 'float'
+    })
+    result = result.rename(columns=dict(names_map))
+    result = result[[new for old, new in names_map]]
+    result = result.to_latex(
+        index=False,
+        escape=True,
+        float_format='\\num{%d}'
+    )
+
     return result
 
 
