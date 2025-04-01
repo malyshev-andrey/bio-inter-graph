@@ -22,12 +22,12 @@ from .rna_chrom import load_redc_redchip_data
 from .gtrd import load_gtrd_chip_seq_data
 from ..shared import memory
 from ..annotations import yalid2state
-from ..ids_mapping import id2yagid, id2yapid, yagid2ids, yapid2ids
+from ..ids_mapping import id2yagid, yagid2ids, yapid2ids
 from ..ids_info import yagid2biotype
 
 
-REBUILD_MAIN_GRAPH = False
-REBUILD_LIGHT_GRAPH = False
+REBUILD_MAIN_GRAPH = True
+REBUILD_LIGHT_GRAPH = True
 
 
 def _wrapper(dataset: str, func: Callable, **kwargs) -> pd.DataFrame:
