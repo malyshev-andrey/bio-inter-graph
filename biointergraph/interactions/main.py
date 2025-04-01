@@ -63,7 +63,7 @@ def summarize_pairwise(
         tqdm.pandas(desc="Fisher's Exact Test calculation")
         result['pvalue'] = result.progress_apply(_fisher_pvalue, axis=1)
         if fdr_control:
-            result['pvalue'] = false_discovery_control(['pvalue'])
+            result['pvalue'] = false_discovery_control(result['pvalue'])
 
     if fisher_pvalue or pmi:
         result = result.drop(columns=['_freq1', '_freq2', '_overall'])
