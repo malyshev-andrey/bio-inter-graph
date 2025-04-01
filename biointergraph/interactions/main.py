@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from scipy.stats import fisher_exact
+from scipy.stats import fisher_exact, false_discovery_control
 from tqdm.auto import tqdm
 
 from ..annotations import best_left_intersect
@@ -22,6 +22,7 @@ def summarize_pairwise(
         ids: list[str], *,
         symmetrize: bool = False,
         fisher_pvalue: bool = True,
+        fdr_control: bool = True,
         pmi: bool = True,
         **kwargs
     ) -> pd.DataFrame:
@@ -61,6 +62,8 @@ def summarize_pairwise(
 
         tqdm.pandas(desc="Fisher's Exact Test calculation")
         result['pvalue'] = result.progress_apply(_fisher_pvalue, axis=1)
+        if fdr_control:
+            result['pvalue'] = false_discovery_control(['pvalue'])
 
     if fisher_pvalue or pmi:
         result = result.drop(columns=['_freq1', '_freq2', '_overall'])
