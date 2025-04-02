@@ -26,10 +26,6 @@ from ..ids_mapping import id2yagid, yagid2ids, yapid2ids
 from ..ids_info import yagid2biotype
 
 
-REBUILD_MAIN_GRAPH = True
-REBUILD_LIGHT_GRAPH = True
-
-
 def _wrapper(dataset: str, func: Callable, **kwargs) -> pd.DataFrame:
     result = func(**kwargs)
     result = result.reset_index(drop=True)
@@ -71,6 +67,8 @@ def _remove_minor_components(graph: nx.Graph) -> nx.Graph:
 
 @memory.cache
 def build_main_graph(max_workers: int = 2) -> nx.Graph:
+    REBUILD_MAIN_GRAPH = False
+
     if not REBUILD_MAIN_GRAPH:
         with importlib.resources.open_binary('bio-inter-graph.static', 'edges.tsv.gz') as file:
             result = pd.read_csv(file, compression='gzip', sep='\t', dtype='str')
@@ -296,7 +294,7 @@ def _lighten_graph(graph: nx.Graph, *, inplace: bool = False) -> nx.Graph:
     if not inplace:
         graph = graph.copy()
 
-    nodes = describe_nodes(graph)
+    nodes = describe_nodes(graph, neighbors_types=False)
     nodes_to_remove = (
         (nodes['degree'].eq(1) & nodes['type'].eq('DNA'))
         | nodes['subtype'].eq('mRNA')
@@ -308,6 +306,8 @@ def _lighten_graph(graph: nx.Graph, *, inplace: bool = False) -> nx.Graph:
 
 @memory.cache
 def build_light_graph(max_workers: int = 2) -> nx.Graph:
+    REBUILD_LIGHT_GRAPH = False
+
     if not REBUILD_LIGHT_GRAPH:
         with importlib.resources.open_binary('bio-inter-graph.static', 'edges_light.tsv.gz') as file:
             result = pd.read_csv(file, compression='gzip', sep='\t', dtype='str')
