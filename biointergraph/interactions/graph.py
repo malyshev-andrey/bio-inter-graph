@@ -263,7 +263,7 @@ def describe_nodes(
 
     result['ids'] = result['node'].map(pd.concat([yagid2ids(), yapid2ids()]))
 
-    tqdm.pandas('Nodes processing: ')
+    tqdm.pandas(desc='Nodes processing: ')
     result['neighbors'] = result['node'].progress_apply(graph.neighbors)
     result['neighbors'] = result['neighbors'].progress_apply(list)
 

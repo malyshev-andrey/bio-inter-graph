@@ -195,7 +195,7 @@ def load_gencode_annotation(
         regions_suffix = '.primary_assembly'
 
     full_path = ''.join([
-        f'ftp://{DOMAIN}/{PATH}',
+        f'https://{DOMAIN}/{PATH}',
         f'/release_{release}',
         '/GRCh37_mapping' if is_hg19 else '',
         f'/gencode.v{release}' + ('lift37' if is_hg19 else ''),

@@ -56,6 +56,14 @@ def graph_datasets_stats(graph: nx.Graph, *, latex: Literal['en', 'ru']|None = N
     edges = describe_edges(graph, explode=True, types=True)
     assert (edges['source'] < edges['target']).all()
 
+    edges = pd.concat([
+        edges,
+        edges[edges['source_type'] == edges['target_type']].rename({
+            'source': 'target',
+            'target': 'source'
+        })
+    ])
+
     result = edges.groupby(
         ['source_type', 'target_type', 'dataset'],
         as_index=False,
