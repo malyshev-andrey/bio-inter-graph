@@ -58,7 +58,7 @@ def graph_datasets_stats(graph: nx.Graph, *, latex: Literal['en', 'ru']|None = N
 
     edges = pd.concat([
         edges,
-        edges[edges['source_type'] == edges['target_type']].rename({
+        edges[edges['source_type'] == edges['target_type']].rename(columns={
             'source': 'target',
             'target': 'source'
         })
@@ -73,6 +73,8 @@ def graph_datasets_stats(graph: nx.Graph, *, latex: Literal['en', 'ru']|None = N
         n_sources=('source', 'nunique'),
         n_targets=('target', 'nunique')
     )
+    result.loc[result['source_type'] == result['target_type'], 'size'] /= 2
+
     index =                ['Source',     'Protocol/Database',       'Cell line', 'Annotation',        'Assembly']
     metadata = {
         'ENCODE ChIP-seq': ['ENCODE',     'ChIP-seq',                'K562',      'GENCODE',           'hg38'    ],
