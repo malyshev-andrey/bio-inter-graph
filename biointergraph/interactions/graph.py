@@ -427,8 +427,15 @@ def indirect_interactions(graph: nx.Graph, n: int) -> pd.DataFrame:
 
     result = result.explode('CN')
     result['CN'] = _node_id2node_type(result['CN'])
-    result = result.pivot_table(index=['source', 'target'], columns='CN', aggfunc='size', fill_value=0)
-    result['n_types'], result['entropy'] = (result > 0).sum(axis=1), entropy(result, axis=1)
+    result = result.pivot_table(
+        index=['source', 'target'], columns='CN',
+        aggfunc='size', fill_value=0
+    )
+    result = result.assign(
+        n_types=(result > 0).sum(axis=1),
+        entropy=entropy(result, axis=1),
+        n_common=result.sum(axis=1)
+    )
     result = result.reset_index()
 
     edges = describe_edges(graph, data=False)
