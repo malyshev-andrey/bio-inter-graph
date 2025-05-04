@@ -1,4 +1,3 @@
-from biointergraph.interactions.graph import build_light_graph
 from .main import summarize_pairwise
 from .karr_seq import load_karr_seq_data
 from .ric_seq import load_ric_seq_data
@@ -17,7 +16,8 @@ from .graph import (
     build_main_graph, describe_graph,
     detect_communities, describe_nodes,
     id2subgraph, build_light_graph,
-    describe_edges
+    describe_edges,
+    graph2random_walks
 )
 from .rna_chrom import load_redc_redchip_data
 from .rna_protein import load_postar3_data, load_frip_seq_data
@@ -41,6 +41,7 @@ __all__ = [
     'load_intact_interactions',
     'build_main_graph', 'describe_graph', 'detect_communities',
     'describe_nodes', 'id2subgraph', 'build_light_graph', 'describe_edges',
+    'graph2random_walks',
     'load_redc_redchip_data',
     'load_postar3_data', 'load_frip_seq_data',
     'load_gtrd_chip_seq_data',

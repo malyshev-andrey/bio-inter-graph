@@ -35,7 +35,8 @@ def _wrapper(dataset: str, func: Callable, **kwargs) -> pd.DataFrame:
 
     n_pairs = result.shape[0]
     swap_mask = result['source'] > result['target']
-    result.loc[swap_mask, ['source', 'target']] = result.loc[swap_mask, ['target', 'source']].values
+    result.loc[swap_mask, ['source', 'target']
+               ] = result.loc[swap_mask, ['target', 'source']].values
     assert (result['source'] < result['target']).all()
     assert not result.duplicated().any()
 
@@ -51,7 +52,8 @@ def _remove_minor_components(graph: nx.Graph) -> nx.Graph:
         return graph
 
     sizes.sort()
-    print(f'The largest graph components: {sizes[-1]}, {sizes[-2]}, {sizes[-3]}')
+    print(
+        f'The largest graph components: {sizes[-1]}, {sizes[-2]}, {sizes[-3]}')
     major_component_size = sizes[-1]
 
     nodes_to_delete = []
@@ -71,41 +73,50 @@ def build_main_graph(max_workers: int = 2) -> nx.Graph:
 
     if not REBUILD_MAIN_GRAPH:
         with (files('biointergraph.static') / "edges.tsv.gz").open('rb') as file:
-            result = pd.read_csv(file, compression='gzip', sep='\t', dtype='str')
+            result = pd.read_csv(file, compression='gzip',
+                                 sep='\t', dtype='str')
 
         result = nx.from_pandas_edgelist(result, edge_attr='dataset')
 
         return result
 
-
     data = [
         ('KARR-seq', load_karr_seq_data, dict(cell_line='K562', pvalue=0.05)),
-        ('ENCODE eCLIP', load_encode_eclip_data, dict(assembly='hg38', annotation='gencode', cell_line='K562')),
-        ('ENCODE RIP', load_encode_rip_data, dict(annotation='gencode', cell_line='K562')),
-        ('ENCODE iCLIP', load_encode_iclip_data, dict(annotation='gencode', cell_line='K562')),
-        ('POSTAR3', load_postar3_data, dict(species='human', cell_line='K562', annotation='gencode')),
+        ('ENCODE eCLIP', load_encode_eclip_data, dict(
+            assembly='hg38', annotation='gencode', cell_line='K562')),
+        ('ENCODE RIP', load_encode_rip_data, dict(
+            annotation='gencode', cell_line='K562')),
+        ('ENCODE iCLIP', load_encode_iclip_data, dict(
+            annotation='gencode', cell_line='K562')),
+        ('POSTAR3', load_postar3_data, dict(
+            species='human', cell_line='K562', annotation='gencode')),
         ('fRIP-seq', load_frip_seq_data, dict()),
         ('RIC-seq', load_ric_seq_data, dict(pvalue=0.05)),
         ('IntAct', load_intact_interactions, dict()),
         ('BioGRID', load_biogrid_interactions, dict()),
         ('STRING', load_string_interactions, dict(min_score=700)),
-        ('ENCODE ChIP-seq', load_encode_chip_seq_data, dict(assembly='hg38', cell_line='K562')),
+        ('ENCODE ChIP-seq', load_encode_chip_seq_data,
+         dict(assembly='hg38', cell_line='K562')),
         ('Red-C & RedChIP', load_redc_redchip_data, dict()),
         ('GTRD', load_gtrd_chip_seq_data, dict(cell_line='K562'))
     ]
 
-    tqdm_kwargs = dict(total=len(data), unit='dataset', desc='Collecting data: ')
+    tqdm_kwargs = dict(total=len(data), unit='dataset',
+                       desc='Collecting data: ')
     if max_workers > 1:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
             for dataset, func, kwargs in data:
-                futures.append(executor.submit(_wrapper, dataset, func, **kwargs))
+                futures.append(executor.submit(
+                    _wrapper, dataset, func, **kwargs))
                 sleep(1)
 
-            data = [f.result() for f in tqdm(as_completed(futures), **tqdm_kwargs)]
+            data = [f.result()
+                    for f in tqdm(as_completed(futures), **tqdm_kwargs)]
 
     else:
-        data = [_wrapper(dataset, func, **kwargs) for dataset, func, kwargs in tqdm(data, **tqdm_kwargs)]
+        data = [_wrapper(dataset, func, **kwargs)
+                for dataset, func, kwargs in tqdm(data, **tqdm_kwargs)]
 
     data = pd.concat(data)
     assert not data.duplicated().any()
@@ -115,7 +126,8 @@ def build_main_graph(max_workers: int = 2) -> nx.Graph:
     assert data['source'].str.match(regex).all()
     assert data['target'].str.match(regex).all()
 
-    data = data.groupby(['source', 'target'], as_index=False, observed=True)['dataset'].agg(','.join)
+    data = data.groupby(['source', 'target'], as_index=False, observed=True)[
+        'dataset'].agg(','.join)
 
     graph = nx.from_pandas_edgelist(data, edge_attr='dataset')
 
@@ -163,7 +175,7 @@ def describe_graph(graph: nx.Graph) -> None:
     print(f'Nodes: {nodes.shape[0]}')
     print(pd.DataFrame({
         'count': nodes['type'].value_counts(),
-        'frac':nodes['type'].value_counts(normalize=True)
+        'frac': nodes['type'].value_counts(normalize=True)
     }))
 
     edges = pd.DataFrame(graph.edges(), columns=['source', 'target'])
@@ -191,8 +203,8 @@ def _community2enrichment(nodes: list[str]) -> tuple[str, float]:
     ids = ids.str.removeprefix('SYMBOL:')
 
     response = requests.post(
-        url = 'https://biit.cs.ut.ee/gprofiler/api/gost/profile/',
-        json = {
+        url='https://biit.cs.ut.ee/gprofiler/api/gost/profile/',
+        json={
             'organism': 'hsapiens',
             'query': ids.tolist(),
             'sources': ['GO'],
@@ -209,7 +221,8 @@ def _community2enrichment(nodes: list[str]) -> tuple[str, float]:
 
 
 def detect_communities(graph) -> pd.DataFrame:
-    communities = nx.community.louvain_communities(graph, resolution=2, seed=42)
+    communities = nx.community.louvain_communities(
+        graph, resolution=2, seed=42)
     result = []
     for community in communities:
         community = list(community)
@@ -253,10 +266,10 @@ def _node2neighbors_types(graph, binary: bool = False) -> pd.DataFrame:
 
 
 def describe_nodes(
-        graph: nx.Graph, *,
-        subtypes: bool = True,
-        neighbors_types: bool = True
-    ) -> pd.DataFrame:
+    graph: nx.Graph, *,
+    subtypes: bool = True,
+    neighbors_types: bool = True
+) -> pd.DataFrame:
     result = _describe_nodes(graph)
 
     result['ids'] = result['node'].map(pd.concat([yagid2ids(), yapid2ids()]))
@@ -278,7 +291,8 @@ def describe_nodes(
             on='node',
             validate='one_to_one'
         )
-        assert (result[['DNA', 'protein', 'RNA']].sum(axis=1) - result['degree']).eq(1).all()
+        assert (result[['DNA', 'protein', 'RNA']].sum(
+            axis=1) - result['degree']).eq(1).all()
 
     return result
 
@@ -310,7 +324,8 @@ def build_light_graph(max_workers: int = 2) -> nx.Graph:
 
     if not REBUILD_LIGHT_GRAPH:
         with (files('biointergraph.static') / "edges_light.tsv.gz").open('rb') as file:
-            result = pd.read_csv(file, compression='gzip', sep='\t', dtype='str')
+            result = pd.read_csv(file, compression='gzip',
+                                 sep='\t', dtype='str')
 
         result = nx.from_pandas_edgelist(result, edge_attr='dataset')
 
@@ -323,12 +338,13 @@ def build_light_graph(max_workers: int = 2) -> nx.Graph:
 
 
 def describe_edges(
-        graph: nx.Graph, *,
-        data: bool = True,
-        explode: bool = False,
-        types: bool = False
-    ) -> pd.DataFrame:
-    if explode: assert data
+    graph: nx.Graph, *,
+    data: bool = True,
+    explode: bool = False,
+    types: bool = False
+) -> pd.DataFrame:
+    if explode:
+        assert data
     if data:
         edges = []
         for source, target, attrs in tqdm(graph.edges(data=True), desc='Edges processing: '):
@@ -338,7 +354,8 @@ def describe_edges(
         edges = pd.DataFrame(graph.edges(), columns=['source', 'target'])
 
     swap_mask = edges['source'] > edges['target']
-    edges.loc[swap_mask, ['source', 'target']] = edges.loc[swap_mask, ['target', 'source']].values
+    edges.loc[swap_mask, ['source', 'target']
+              ] = edges.loc[swap_mask, ['target', 'source']].values
     assert (edges['source'] < edges['target']).all()
 
     if types:
@@ -350,3 +367,27 @@ def describe_edges(
         edges = edges.explode('dataset')
 
     return edges
+
+
+def graph2random_walks(graph: nx.Graph, n: int, length: int = 2) -> pd.DataFrame:
+    edges = pd.DataFrame(graph.edges(), columns=['source', 'target'])
+    assert edges.shape[0] == graph.number_of_edges()
+    edges = pd.concat([
+        edges,
+        edges.rename(columns={'source': 'target', 'target': 'source'})
+    ])
+    assert (edges['source'] < edges['target']).mean() == 0.5
+    assert edges.shape[0] == 2 * graph.number_of_edges()
+
+    edges = edges.groupby('source')
+
+    result = edges.sample(n=1)
+    result = result.sample(n, replace=True)
+    result = result.rename(columns={'source': 0, 'target': 1})
+
+    for i in tqdm(range(2, length)):
+        next_step = edges.sample(n=1)
+        next_step = next_step.set_index('source')['target']
+        result[i] = result[i-1].map(next_step)
+
+    return result
