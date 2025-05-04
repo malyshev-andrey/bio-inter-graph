@@ -1,3 +1,35 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "bio-inter-graph"
+version = "0.1.0"
+description = "Graph Algorithms for Biological Interactomes"
+readme = "README.md"
+authors = [{ name = "Andrey Malyshev", email = "malyshew.a.d@yandex.ru" }]
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.21.0",
+    "pandas>=1.3.0",
+    "tqdm>=4.42.0",
+    "requests>=2.20.0",
+    "scipy>=1.0.0,<2.0.0",
+    "PyRanges>=0.0.114",
+    "joblib>=1.2.0,<2.0.0",
+    "networkx>=2.6"
+]
+
+[tool.setuptools]
+package-dir = { "" = "." }
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["biointergraph*"]
+
+[tool.setuptools.package-data]
+"biointergraph.static" = ["*.tsv.gz", "*.json"]
+
+[tool.setuptools.include-package-data]
+include-package-data = true

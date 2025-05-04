@@ -1,6 +1,6 @@
 from itertools import combinations
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import importlib.resources
+from importlib.resources import files
 
 import pandas as pd
 import networkx as nx
@@ -23,7 +23,7 @@ def _build_yagid_graph() -> pd.Series:
     REBUILD_YAGID_MAPPING = False
 
     if not REBUILD_YAGID_MAPPING:
-        with importlib.resources.open_text('bio-inter-graph.static', 'id2yagid.json') as file:
+        with (files('biointergraph.static') / "id2yagid.json").open('r') as file:
             result = pd.read_json(file, typ='series')
         return result
 

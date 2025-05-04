@@ -1,6 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from time import sleep
-import importlib.resources
+from importlib.resources import files
 from typing import Callable
 
 import requests
@@ -70,7 +70,7 @@ def build_main_graph(max_workers: int = 2) -> nx.Graph:
     REBUILD_MAIN_GRAPH = False
 
     if not REBUILD_MAIN_GRAPH:
-        with importlib.resources.open_binary('bio-inter-graph.static', 'edges.tsv.gz') as file:
+        with (files('biointergraph.static') / "edges.tsv.gz").open('rb') as file:
             result = pd.read_csv(file, compression='gzip', sep='\t', dtype='str')
 
         result = nx.from_pandas_edgelist(result, edge_attr='dataset')
@@ -309,7 +309,7 @@ def build_light_graph(max_workers: int = 2) -> nx.Graph:
     REBUILD_LIGHT_GRAPH = False
 
     if not REBUILD_LIGHT_GRAPH:
-        with importlib.resources.open_binary('bio-inter-graph.static', 'edges_light.tsv.gz') as file:
+        with (files('biointergraph.static') / "edges_light.tsv.gz").open('rb') as file:
             result = pd.read_csv(file, compression='gzip', sep='\t', dtype='str')
 
         result = nx.from_pandas_edgelist(result, edge_attr='dataset')

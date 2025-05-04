@@ -1,4 +1,4 @@
-import importlib.resources
+from importlib.resources import files
 
 import pandas as pd
 import networkx as nx
@@ -99,7 +99,7 @@ def _build_yapid_graph():
     REBUILD_YAPID_MAPPING = False
 
     if not REBUILD_YAPID_MAPPING:
-        with importlib.resources.open_text('bio-inter-graph.static', 'id2yapid.json') as file:
+        with (files('biointergraph.static') / "id2yapid.json").open('r') as file:
             result = pd.read_json(file, typ='series')
         return result
 

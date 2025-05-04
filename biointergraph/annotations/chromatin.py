@@ -1,4 +1,4 @@
-import importlib.resources
+from importlib.resources import files
 
 import pandas as pd
 
@@ -76,7 +76,7 @@ def load_chromhmm_annotation(split_bin: int|None = 500) -> pd.DataFrame:
     REBUILD_CHROMHMM_ANNOTATION = False
 
     if split_bin == 500 and not REBUILD_CHROMHMM_ANNOTATION:
-        with importlib.resources.open_binary('bio-inter-graph.static', 'chromhmm_500.tsv.gz') as file:
+        with (files('biointergraph.static') / "chromhmm_500.tsv.gz").open('rb') as file:
             result = pd.read_csv(file, compression='gzip', sep='\t')
 
         assert _df_hash(result) == CHROMHMM_500_HASH
