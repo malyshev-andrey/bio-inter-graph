@@ -1,15 +1,9 @@
 # bio-inter-graph
 
 ## Quick start
-Clone this repository with the following command:
-
-```{bash}
-git clone https://github.com/malyshev-andrey/bio-inter-graph.git
-```
-
 Install package using pip:
 ```{bash}
-pip install --upgrade ./bio-inter-graph
+pip install -U git+https://github.com/malyshev-andrey/bio-inter-graph.git
 ```
 
 Check installation:
