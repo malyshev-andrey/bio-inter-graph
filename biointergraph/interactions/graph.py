@@ -8,6 +8,7 @@ import requests
 import pandas as pd
 import networkx as nx
 from tqdm.auto import tqdm
+from scipy.stats import entropy
 
 from .encode import (
     load_encode_eclip_data,
@@ -386,26 +387,54 @@ def node2neighbors(graph: nx.Graph) -> pd.Series:
 
 
 def graph2random_walks(graph: nx.Graph, n: int, length: int = 1) -> pd.DataFrame:
-    edges = pd.DataFrame(graph.edges(), columns=['source', 'target'])
-    assert edges.shape[0] == graph.number_of_edges()
-    edges = pd.concat([
-        edges,
-        edges.rename(columns={'source': 'target', 'target': 'source'})
-    ])
-    assert (edges['source'] < edges['target']).mean() == 0.5
-    assert edges.shape[0] == 2 * graph.number_of_edges()
+    edges = describe_edges(graph, data=False, symmetrize=True)
 
     result = edges.sample(n, replace=True)
     result = result.rename(columns={'source': 0, 'target': 1})
 
     tqdm.pandas()
-    edges = edges.groupby('source')[
-        'target'].progress_aggregate(pd.Series.to_list)
+    edges = edges.groupby('source')['target'].progress_aggregate(pd.Series.to_list)
 
     for i in tqdm(range(1, length)):
-        result = result.join(edges.rename(i+1), on=i,
-                             how='left', validate='many_to_one')
+        result = result.join(edges.rename(i+1), on=i, how='left', validate='many_to_one')
         tqdm.pandas(leave=False)
         result[i+1] = result[i+1].progress_apply(random.choice)
+
+    return result
+
+
+def indirect_interactions(graph: nx.Graph, n: int) -> pd.DataFrame:
+    result = graph2random_walks(graph, n, 2)[[0,2]]
+    result.columns = 'source', 'target'
+
+    result = result[result['source'] != result['target']]
+    mask = result['source'] > result['target']
+    result.loc[mask, ['source', 'target']] = result.loc[mask, ['target', 'source']].values
+    assert (result['source'] < result['target']).all()
+
+    result = result.drop_duplicates()
+
+    neighbors = node2neighbors(graph)
+    result['source_neighbors'] = result['source'].map(neighbors)
+    result['target_neighbors'] = result['target'].map(neighbors)
+
+    tqdm.pandas()
+    result['CN'] = result.progress_apply(
+        lambda row: row['source_neighbors'] & row['target_neighbors'],
+        axis=1
+    )
+    result = result.drop(columns=['source_neighbors', 'target_neighbors'])
+
+    result = result.explode('CN')
+    result['CN'] = _node_id2node_type(result['CN'])
+    result = result.pivot_table(index=['source', 'target'], columns='CN', aggfunc='size', fill_value=0)
+    result['n_types'], result['entropy'] = (result > 0).sum(axis=1), entropy(result, axis=1)
+    result = result.reset_index()
+
+    edges = describe_edges(graph, data=False)
+    edges['is_direct'] = True
+    result = result.merge(edges, how='left', validate='many_to_one')
+    with pd.option_context("future.no_silent_downcasting", True):
+        result['is_direct'] = result['is_direct'].fillna(False).infer_objects(copy=False)
 
     return result
