@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=60", "setuptools-scm>=8.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -20,16 +20,3 @@ dependencies = [
     "joblib>=1.2.0,<2.0.0",
     "networkx>=2.6",
 ]
-
-[tool.setuptools]
-package-dir = { "" = "." }
-
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["biointergraph*"]
-
-[tool.setuptools.package-data]
-"biointergraph.static" = ["*.tsv.gz", "*.json"]
-
-[tool.setuptools.include-package-data]
-include-package-data = true
