@@ -340,12 +340,10 @@ def build_light_graph(max_workers: int = 2) -> nx.Graph:
 
 def describe_edges(
     graph: nx.Graph, *,
-    data: bool = True,
-    explode: bool = False,
-    types: bool = False
+    data: bool = True, explode: bool = False,
+    types: bool = False,
+    symmetrize: bool = False
 ) -> pd.DataFrame:
-    if explode:
-        assert data
     if data:
         edges = []
         for source, target, attrs in tqdm(graph.edges(data=True), desc='Edges processing: '):
@@ -354,20 +352,36 @@ def describe_edges(
     else:
         edges = pd.DataFrame(graph.edges(), columns=['source', 'target'])
 
-    swap_mask = edges['source'] > edges['target']
-    edges.loc[swap_mask, ['source', 'target']
-              ] = edges.loc[swap_mask, ['target', 'source']].values
+    mask = edges['source'] > edges['target']
+    edges.loc[mask, ['source', 'target']] = edges.loc[mask, ['target', 'source']].values
     assert (edges['source'] < edges['target']).all()
+    assert edges.shape[0] == graph.number_of_edges()
+
+    if explode:
+        assert data
+        edges['dataset'] = edges['dataset'].str.split(',')
+        edges = edges.explode('dataset')
+
+    if symmetrize:
+        edges = pd.concat([
+            edges,
+            edges.rename(columns={'source': 'target', 'target': 'source'})
+        ])
+        assert (edges['source'] < edges['target']).mean() == 0.5
+        assert edges.shape[0] == 2 * graph.number_of_edges()
 
     if types:
         edges['source_type'] = _node_id2node_type(edges['source'])
         edges['target_type'] = _node_id2node_type(edges['target'])
 
-    if explode:
-        edges['dataset'] = edges['dataset'].str.split(',')
-        edges = edges.explode('dataset')
-
     return edges
+
+
+def node2neighbors(graph: nx.Graph) -> pd.Series:
+    result = describe_edges(graph, data=False, symmetrize=True)
+    tqdm.pandas()
+    result = result.groupby('source')['target'].progress_aggregate(pd.Series.to_list)
+    return result
 
 
 def graph2random_walks(graph: nx.Graph, n: int, length: int = 1) -> pd.DataFrame:
