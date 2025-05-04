@@ -369,7 +369,7 @@ def describe_edges(
     return edges
 
 
-def graph2random_walks(graph: nx.Graph, n: int, length: int = 2) -> pd.DataFrame:
+def graph2random_walks(graph: nx.Graph, n: int, length: int = 1) -> pd.DataFrame:
     edges = pd.DataFrame(graph.edges(), columns=['source', 'target'])
     assert edges.shape[0] == graph.number_of_edges()
     edges = pd.concat([
@@ -379,14 +379,17 @@ def graph2random_walks(graph: nx.Graph, n: int, length: int = 2) -> pd.DataFrame
     assert (edges['source'] < edges['target']).mean() == 0.5
     assert edges.shape[0] == 2 * graph.number_of_edges()
 
-    result = edges.groupby('source').sample(n=1)
-    result = result.sample(n, replace=True).reset_index(drop=True)
+    result = edges.sample(n, replace=True)
     result = result.rename(columns={'source': 0, 'target': 1})
 
-    edges = edges.set_index('source')['target']
+    tqdm.pandas()
+    edges = edges.groupby('source')[
+        'target'].progress_aggregate(pd.Series.to_list)
 
-    for i in tqdm(range(2, length)):
-        result = result.join(edges.rename(i), on=i-1, how='left')
-        result = result.groupby(level=0).sample(n=1)
+    for i in tqdm(range(1, length)):
+        result = result.join(edges.rename(i+1), on=i,
+                             how='left', validate='many_to_one')
+        tqdm.pandas(leave=False)
+        result[i+1] = result[i+1].progress_apply(random.choice)
 
     return result
