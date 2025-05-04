@@ -381,6 +381,7 @@ def node2neighbors(graph: nx.Graph) -> pd.Series:
     result = describe_edges(graph, data=False, symmetrize=True)
     tqdm.pandas()
     result = result.groupby('source')['target'].progress_aggregate(pd.Series.to_list)
+    result = result.apply(set)
     return result
 
 
