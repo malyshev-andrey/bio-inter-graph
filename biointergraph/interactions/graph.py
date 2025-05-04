@@ -379,15 +379,14 @@ def graph2random_walks(graph: nx.Graph, n: int, length: int = 2) -> pd.DataFrame
     assert (edges['source'] < edges['target']).mean() == 0.5
     assert edges.shape[0] == 2 * graph.number_of_edges()
 
-    edges = edges.groupby('source')
-
-    result = edges.sample(n=1)
-    result = result.sample(n, replace=True)
+    result = edges.groupby('source').sample(n=1)
+    result = result.sample(n, replace=True).reset_index(drop=True)
     result = result.rename(columns={'source': 0, 'target': 1})
 
+    edges = edges.set_index('source')['target']
+
     for i in tqdm(range(2, length)):
-        next_step = edges.sample(n=1)
-        next_step = next_step.set_index('source')['target']
-        result[i] = result[i-1].map(next_step)
+        result = result.join(edges.rename(i), on=i-1, how='left')
+        result = result.groupby(level=0).sample(n=1)
 
     return result
