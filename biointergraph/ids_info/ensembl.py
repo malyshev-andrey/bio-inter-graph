@@ -1,4 +1,4 @@
-from ftplib import FTP
+from ftplib import FTP, error_perm
 import gzip
 from io import BytesIO
 
@@ -9,6 +9,7 @@ from ..annotations import unify_chr
 from ..shared import UNIFY_BIOTYPES, memory
 
 DOMAIN = 'ftp.ensembl.org'
+FALLBACK_RELEASE = '115'
 
 
 def _latest_ensembl_release() -> str:
@@ -37,7 +38,11 @@ def _ensembl_mysql_prefix(release: str|None = None) -> str:
 
     with FTP(DOMAIN) as ftp:
         ftp.login()
-        ftp.cwd(f'pub/release-{release}/mysql')
+        try:
+            ftp.cwd(f'pub/release-{release}/mysql')
+        except error_perm:
+            release = FALLBACK_RELEASE
+            ftp.cwd(f'pub/release-{release}/mysql')
         versions = ftp.nlst()
 
     versions = pd.Series(versions)
