@@ -9,7 +9,7 @@ from ..annotations import unify_chr
 from ..shared import UNIFY_BIOTYPES, memory
 
 DOMAIN = 'ftp.ensembl.org'
-FALLBACK_RELEASE = '114'
+FALLBACK_RELEASE = '113'
 
 
 def _latest_ensembl_release() -> str:
