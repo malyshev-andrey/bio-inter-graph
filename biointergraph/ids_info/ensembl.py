@@ -1,4 +1,5 @@
 from ftplib import FTP, error_perm
+from urllib.error import URLError
 import gzip
 from io import BytesIO
 
@@ -96,7 +97,11 @@ def _retrieve_ensembl_schema(table, *, release: str|None = None) -> list[str]:
 def fetch_ensembl_table(table: str, *, release: str|None = None) -> pd.DataFrame:
     prefix = _ensembl_mysql_prefix(release)
     url = f'ftp://ftp.ensembl.org/pub/current_mysql/{prefix}/{table}.txt.gz'
-    result = pd.read_csv(url, sep='\t', header=None, dtype='str')
+    try:
+        result = pd.read_csv(url, sep='\t', header=None, dtype='str')
+    except URLError:
+        print(f'Failed to fetch data from {url}')
+        raise
 
     columns = _retrieve_ensembl_schema(table, release=release)
     assert result.shape[1] == len(columns)
