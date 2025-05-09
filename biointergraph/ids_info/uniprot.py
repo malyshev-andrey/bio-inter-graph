@@ -4,6 +4,8 @@ from urllib.parse import urlencode
 import pandas as pd
 
 from ..shared import _read_tsv, memory
+from ..ids_mapping import yapid2ids_by_type
+
 
 GO_NUCLEAR = [
     'nucleus [GO:0005634]',
@@ -53,4 +55,17 @@ def uniprot_id_info(organism_id: str = '9606') -> pd.DataFrame:
     )
 
     result['is_nuclear'] = _is_nuclear(result)
+    return result
+
+
+def yapid2is_nuclear() -> pd.Series:
+    uniprot2is_nuclear = uniprot_id_info()
+    uniprot2is_nuclear = uniprot2is_nuclear.set_index('Entry', verify_integrity=True)['is_nuclear']
+
+    result = yapid2ids_by_type()
+    result = result['uniprot'].explode()
+
+    result = result.map(uniprot2is_nuclear).fillna(0)
+    result = result.groupby(level=0).sum().ge(1)
+
     return result
