@@ -1,3 +1,4 @@
+import random
 from importlib.resources import files
 
 import pandas as pd
@@ -170,4 +171,14 @@ def yapid2ids_by_type() -> pd.DataFrame:
         index='yapid', columns='id_type',
         values='id', aggfunc=pd.Series.to_list
     )
+    return result
+
+
+def yapid2best_id() -> pd.Series:
+    ids_by_type = yapid2ids_by_type()
+    result = pd.Series(float('nan'), index=ids_by_type.index)
+    for id_type in 'symbol', 'biogrid', 'ensembl', 'uniprot':
+        result = result.combine_first(ids_by_type[id_type])
+    assert result.notna().all()
+    result = result.apply(random.choice)
     return result

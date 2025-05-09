@@ -6,7 +6,7 @@ from .intersect import (
     extended_gencode_intersect2pairwise
 )
 from .main import id2yagid, yagid2ids
-from .protein import id2yapid, yapid2ids, yapid2ids_by_type
+from .protein import id2yapid, yapid2ids, yapid2ids_by_type, yapid2best_id
 from .entrez import refseq_transcript_id2entrez_gene_id, karr_seq_ids2entrezgene_id
 
 
@@ -16,7 +16,7 @@ __all__ = [
     'gencode_refseq_intersect2pairwise',
     'extended_refseq_intersect2pairwise',
     'extended_gencode_intersect2pairwise',
-    'id2yagid', 'yagid2ids', 'id2yapid', 'yapid2ids', 'yapid2ids_by_type',
+    'id2yagid', 'yagid2ids', 'id2yapid', 'yapid2ids', 'yapid2ids_by_type', 'yapid2best_id',
     'refseq_transcript_id2entrez_gene_id',
     'karr_seq_ids2entrezgene_id'
 ]
