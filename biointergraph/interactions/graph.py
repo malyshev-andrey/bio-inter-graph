@@ -24,7 +24,7 @@ from .rna_chrom import load_redc_redchip_data
 from .gtrd import load_gtrd_chip_seq_data
 from ..shared import memory
 from ..annotations import yalid2state
-from ..ids_mapping import id2yagid, yagid2ids, yapid2ids
+from ..ids_mapping import id2yagid, yagid2ids, yapid2ids, yapid2best_id
 from ..ids_info import yagid2biotype
 
 
@@ -397,44 +397,6 @@ def indirect_interactions(graph: nx.Graph, n: int) -> pd.DataFrame:
     return result
 
 
-def _community2enrichment(nodes: list[str]) -> tuple[str, float]:
-    nodes = [n for n in nodes if n.startswith('YAPID')]
-    if not nodes:
-        return '', 1
-
-    ids = yapid2ids(nodes)
-    ids = ids.explode()
-    ids = ids.str.removeprefix('SYMBOL:')
-
-    response = requests.post(
-        url='https://biit.cs.ut.ee/gprofiler/api/gost/profile/',
-        json={
-            'organism': 'hsapiens',
-            'query': ids.tolist(),
-            'sources': ['GO'],
-            'numeric_ns': 'BIOGRID'
-        }
-    )
-    result = pd.DataFrame(response.json()['result'])
-
-    if result.shape[0] == 0:
-        return '', 1
-
-    result = result.iloc[0]
-    return result['name'], result['p_value']
-
-
-# def detect_communities(graph) -> pd.DataFrame:
-#     tqdm.pandas()
-#     go_terms = result['nodes'].progress_apply(_community2enrichment)
-#     go_terms = go_terms.tolist()
-#     result[['go_term', 'p_value']] = pd.DataFrame(go_terms)
-
-#     result = result.sort_values('p_value')
-
-#     return result
-
-
 def _merge_singleton_communities(graph: nx.Graph, communities: pd.DataFrame) -> pd.DataFrame:
     member2community = communities.explode('members').set_index('members')
     singleton = member2community[member2community['size'].eq(1)].index
@@ -456,10 +418,40 @@ def _merge_singleton_communities(graph: nx.Graph, communities: pd.DataFrame) -> 
     return communities
 
 
+def _protein_ids2enrichment(ids: list[str]) -> dict:
+    if len(ids) > 10000:
+        return {}
+
+    response = requests.post(
+        url='https://biit.cs.ut.ee/gprofiler/api/gost/profile/',
+        json={
+            'organism': 'hsapiens',
+            'query': ids,
+            'sources': ['GO'],
+            'numeric_ns': 'BIOGRID'
+        }
+    )
+    response.raise_for_status()
+    response = response.json()
+    print('Failed ids:', *response['meta']['genes_metadata']['failed'])
+    return response['result']
+
+
+def _community2enrichment(communities: pd.DataFrame) -> pd.Series:
+    result = communities.set_index('community', verify_integrity=True)['members'].explode()
+    result = result[result.str.startswith('YAPID')]
+    result = result.map(yapid2best_id())
+    result = result.groupby(level=0).agg(pd.Series.to_list)
+    tqdm.pandas()
+    result = result.progress_apply(_protein_ids2enrichment)
+    return result
+
+
 def detect_communities(
         graph: nx.Graph,
         merge: bool = False,
         members_types: bool = False,
+        enrichment: bool = False,
         **kwargs
     ) -> pd.DataFrame:
     result = nx.community.louvain_communities(graph, **kwargs)
@@ -482,5 +474,8 @@ def detect_communities(
         types = types.pivot_table(index='community', columns='type', aggfunc='size', fill_value=0)
         result = pd.concat([result, types], axis=1)
         assert (result['size'] == result[['RNA', 'DNA', 'protein']].sum(axis=1)).all()
+
+    if enrichment:
+        result['enrichment'] = _community2enrichment(result)
 
     return result
