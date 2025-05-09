@@ -25,7 +25,7 @@ from .gtrd import load_gtrd_chip_seq_data
 from ..shared import memory
 from ..annotations import yalid2state
 from ..ids_mapping import id2yagid, yagid2ids, yapid2ids, yapid2best_id
-from ..ids_info import yagid2biotype
+from ..ids_info import yagid2biotype, yapid2is_nuclear
 
 
 def _wrapper(dataset: str, func: Callable, **kwargs) -> pd.DataFrame:
@@ -455,6 +455,7 @@ def detect_communities(
         merge: bool = False,
         members_types: bool = False,
         enrichment: bool = False,
+        nuclear_frac: bool = True,
         **kwargs
     ) -> pd.DataFrame:
     result = nx.community.louvain_communities(graph, **kwargs)
@@ -480,5 +481,15 @@ def detect_communities(
 
     if enrichment:
         result['enrichment'] = _community2enrichment(result)
+
+    if nuclear_frac:
+        nuclear_data = result[['community', 'members']].explode('members')
+        nuclear_data['nuclear_frac'] = nuclear_data['members'].map(yapid2is_nuclear())
+        result = result.join(
+            nuclear_data.groupby('community')['nuclear_frac'].mean().fillna(0.0),
+            on='community',
+            how='left',
+            validate='one_to_one'
+        )
 
     return result
