@@ -137,17 +137,37 @@ def id2yapid(ids: pd.Series|None = None, *, strict: bool = False) -> pd.Series:
     return result
 
 
-def yapid2ids(yapid: str|list[str]|None = None, *, squeeze: bool = True) -> pd.Series|list[str]:
+def yapid2ids(yapid: str|list[str]|pd.Series|None = None, *, squeeze: bool = True) -> pd.Series|list[str]:
     result = id2yapid()
     if yapid is not None:
         if isinstance(yapid, list):
             result = result[result.isin(yapid)]
-        else:
-            assert isinstance(yapid, str)
+        elif isinstance(yapid, str):
             result = result[result.eq(yapid)]
+        else:
+            assert isinstance(yapid, pd.Series)
     result = result.to_frame().reset_index(names='ids')
-    result = result.groupby('yapid')['ids'].agg(list)
+    result = result.groupby('yapid')['ids'].agg(pd.Series.to_list)
+
+    if isinstance(yapid, pd.Series):
+        result = yapid.map(result)
 
     if squeeze and isinstance(yapid, str):
         result = result.item()
+    return result
+
+
+def yapid2ids_by_type() -> pd.DataFrame:
+    result = id2yapid().to_frame()
+    result = result.reset_index(names='id')
+    result['id_type'] = 'uniprot'
+    result['id_type'] = result['id_type'].case_when([
+        (result['id'].str.startswith('SYMBOL:'), 'symbol'),
+        (result['id'].str.match('^ENSP\d{11}$'), 'ensembl'),
+        (result['id'].str.isdigit(), 'biogrid')
+    ])
+    result = result.pivot_table(
+        index='yapid', columns='id_type',
+        values='id', aggfunc=pd.Series.to_list
+    )
     return result
