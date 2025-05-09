@@ -195,56 +195,6 @@ def describe_graph(graph: nx.Graph) -> None:
     print(f'Diameter: {min(diameter_sample)}-{max(diameter_sample)}')
 
 
-def _community2enrichment(nodes: list[str]) -> tuple[str, float]:
-    nodes = [n for n in nodes if n.startswith('YAPID')]
-    if not nodes:
-        return '', 1
-
-    ids = yapid2ids(nodes)
-    ids = ids.explode()
-    ids = ids.str.removeprefix('SYMBOL:')
-
-    response = requests.post(
-        url='https://biit.cs.ut.ee/gprofiler/api/gost/profile/',
-        json={
-            'organism': 'hsapiens',
-            'query': ids.tolist(),
-            'sources': ['GO'],
-            'numeric_ns': 'BIOGRID'
-        }
-    )
-    result = pd.DataFrame(response.json()['result'])
-
-    if result.shape[0] == 0:
-        return '', 1
-
-    result = result.iloc[0]
-    return result['name'], result['p_value']
-
-
-def detect_communities(graph) -> pd.DataFrame:
-    communities = nx.community.louvain_communities(
-        graph, resolution=2, seed=42)
-    result = []
-    for community in communities:
-        community = list(community)
-        result.append({
-            'nodes': community,
-            'size': len(community),
-            'protein_frac': pd.Series(community).str.startswith('YAPID').mean()
-        })
-    result = pd.DataFrame(result)
-
-    tqdm.pandas()
-    go_terms = result['nodes'].progress_apply(_community2enrichment)
-    go_terms = go_terms.tolist()
-    result[['go_term', 'p_value']] = pd.DataFrame(go_terms)
-
-    result = result.sort_values('p_value')
-
-    return result
-
-
 def _node2neighbors_types(graph, binary: bool = False) -> pd.DataFrame:
     edges = pd.DataFrame(graph.edges(), columns=['source', 'target'])
 
@@ -443,5 +393,94 @@ def indirect_interactions(graph: nx.Graph, n: int) -> pd.DataFrame:
     result = result.merge(edges, how='left', validate='many_to_one')
     with pd.option_context("future.no_silent_downcasting", True):
         result['is_direct'] = result['is_direct'].fillna(False).infer_objects(copy=False)
+
+    return result
+
+
+def _community2enrichment(nodes: list[str]) -> tuple[str, float]:
+    nodes = [n for n in nodes if n.startswith('YAPID')]
+    if not nodes:
+        return '', 1
+
+    ids = yapid2ids(nodes)
+    ids = ids.explode()
+    ids = ids.str.removeprefix('SYMBOL:')
+
+    response = requests.post(
+        url='https://biit.cs.ut.ee/gprofiler/api/gost/profile/',
+        json={
+            'organism': 'hsapiens',
+            'query': ids.tolist(),
+            'sources': ['GO'],
+            'numeric_ns': 'BIOGRID'
+        }
+    )
+    result = pd.DataFrame(response.json()['result'])
+
+    if result.shape[0] == 0:
+        return '', 1
+
+    result = result.iloc[0]
+    return result['name'], result['p_value']
+
+
+# def detect_communities(graph) -> pd.DataFrame:
+#     tqdm.pandas()
+#     go_terms = result['nodes'].progress_apply(_community2enrichment)
+#     go_terms = go_terms.tolist()
+#     result[['go_term', 'p_value']] = pd.DataFrame(go_terms)
+
+#     result = result.sort_values('p_value')
+
+#     return result
+
+
+def _merge_singleton_communities(graph: nx.Graph, communities: pd.DataFrame) -> pd.DataFrame:
+    member2community = communities.explode('members').set_index('members')
+    singleton = member2community[member2community['size'].eq(1)].index
+
+    edges = describe_edges(graph, data=False, symmetrize=True)
+    singleton = edges[edges['source'].isin(singleton)]
+
+    singleton = singleton.join(member2community, on='target', how='left', validate='many_to_one')
+    singleton = singleton.sort_values('size').drop_duplicates('source', keep='last')
+
+    assert (communities.index == communities['community']).all()
+    for _, row in singleton.iterrows():
+        communities.loc[row['community'], 'members'].add(row['source'])
+        communities.loc[row['community'], 'size'] += 1
+
+    communities = communities[communities['size'].ne(1)].copy()
+    assert communities['size'].sum() == graph.number_of_nodes()
+
+    return communities
+
+
+def detect_communities(
+        graph: nx.Graph,
+        merge: bool = False,
+        members_types: bool = False,
+        **kwargs
+    ) -> pd.DataFrame:
+    result = nx.community.louvain_communities(graph, **kwargs)
+    result = pd.DataFrame({'members': result})
+    result = result.reset_index(names='community')
+
+    result['size'] = result['members'].apply(len)
+    assert result['size'].sum() == graph.number_of_nodes()
+
+    if merge:
+        result = _merge_singleton_communities(graph, result)
+
+    if members_types:
+        types = result.explode('members')
+        types['type'] = types['members'].str[:5].map({
+            'YALID': 'DNA',
+            'YAGID': 'RNA',
+            'YAPID': 'protein'
+        })
+        types = types.pivot_table(index='community', columns='type', aggfunc='size', fill_value=0)
+        result = pd.concat([result, types], axis=1)
+        assert (result['size'] == result[['RNA', 'DNA', 'protein']].sum(axis=1)).all()
 
     return result
