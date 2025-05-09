@@ -9,7 +9,7 @@ from .entrez import entrezgene_id2biotype, entrezgene_id_info
 from .refseq import refseq_transcript_id_info, refseq_transcript_id2biotype
 from .extended import extended_gene_id2biotype
 from .main import yagid2biotype
-from .uniprot import uniprot_id_info
+from .uniprot import uniprot_id_info, yapid2is_nuclear
 
 __all__ = [
     'fetch_ensembl_table', 'ensembl_transcript_id_info', 'ensembl_gene_id_info',
@@ -18,5 +18,5 @@ __all__ = [
     'refseq_transcript_id_info', 'refseq_transcript_id2biotype',
     'extended_gene_id2biotype',
     'yagid2biotype',
-    'uniprot_id_info'
+    'uniprot_id_info', 'yapid2is_nuclear'
 ]
