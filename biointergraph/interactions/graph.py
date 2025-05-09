@@ -418,9 +418,9 @@ def _merge_singleton_communities(graph: nx.Graph, communities: pd.DataFrame) -> 
     return communities
 
 
-def _protein_ids2enrichment(ids: list[str]) -> dict:
+def _protein_ids2enrichment(ids: list[str]) -> list|float:
     if len(ids) > 10000:
-        return {}
+        return float('nan')
 
     response = requests.post(
         url='https://biit.cs.ut.ee/gprofiler/api/gost/profile/',
@@ -433,8 +433,11 @@ def _protein_ids2enrichment(ids: list[str]) -> dict:
     )
     response.raise_for_status()
     response = response.json()
-    print('Failed ids:', *response['meta']['genes_metadata']['failed'])
-    return response['result']
+    failed = response['meta']['genes_metadata']['failed']
+    if failed:
+        print('Failed ids:', *failed)
+    result = response['result']
+    return result if result else float('nan')
 
 
 def _community2enrichment(communities: pd.DataFrame) -> pd.Series:
