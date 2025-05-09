@@ -181,4 +181,5 @@ def yapid2best_id() -> pd.Series:
         result = result.combine_first(ids_by_type[id_type])
     assert result.notna().all()
     result = result.apply(random.choice)
+    result = result.str.removeprefix('SYMBOL:')
     return result
