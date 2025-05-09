@@ -1,8 +1,32 @@
+from re import escape
 from urllib.parse import urlencode
 
 import pandas as pd
 
 from ..shared import _read_tsv, memory
+
+GO_NUCLEAR = [
+    'nucleus [GO:0005634]',
+    'nucleoplasm [GO:0005654]',
+    'nucleolus [GO:0005730]',
+    'nuclear speck [GO:0016607]',
+    'nuclear body [GO:0016604]',
+    'nuclear matrix [GO:0016363]',
+    'nucleosome [GO:0000786]'
+]
+
+
+def _is_nuclear(data: pd.DataFrame) -> pd.Series:
+    data = data[['Gene Ontology (cellular component)', 'Subcellular location [CC]']]
+    data = data.fillna('')
+
+    result = data['Subcellular location [CC]'].str.contains('Nucleus') / 2
+    regex = '|'.join(map(escape, GO_NUCLEAR))
+    result += data['Gene Ontology (cellular component)'].str.contains(regex) / 2
+
+    assert result.notna().all() and result.between(0, 1).all()
+
+    return result
 
 
 @memory.cache
@@ -27,4 +51,6 @@ def uniprot_id_info(organism_id: str = '9606') -> pd.DataFrame:
         f'https://rest.uniprot.org/uniprotkb/stream?{urlencode(params)}',
         compression='gzip'
     )
+
+    result['is_nuclear'] = _is_nuclear(result)
     return result
