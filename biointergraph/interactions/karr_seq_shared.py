@@ -34,7 +34,7 @@ def _retrieve_karr_seq_metadata(cell_line: str|None = None, in_vivo: bool = True
     metadata['frac'] = metadata['conditions'].str.extract(frac_regex)['frac']
     metadata['frac'] = metadata['frac'].fillna('Total')
 
-    cell_line_regex = '^kethoxal-(?P<cell_line>[^-+]+)(\+S2)?(-.*)?$'
+    cell_line_regex = r'^kethoxal-(?P<cell_line>[^-+]+)(\+S2)?(-.*)?$'
     metadata['cell_line'] = metadata['conditions'].str.extract(cell_line_regex)['cell_line']
 
     in_vivo_conditions = [

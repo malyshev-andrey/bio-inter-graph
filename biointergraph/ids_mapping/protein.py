@@ -164,7 +164,7 @@ def yapid2ids_by_type() -> pd.DataFrame:
     result['id_type'] = 'uniprot'
     result['id_type'] = result['id_type'].case_when([
         (result['id'].str.startswith('SYMBOL:'), 'symbol'),
-        (result['id'].str.match('^ENSP\d{11}$'), 'ensembl'),
+        (result['id'].str.match(r'^ENSP\d{11}$'), 'ensembl'),
         (result['id'].str.isdigit(), 'biogrid')
     ])
     result = result.pivot_table(
