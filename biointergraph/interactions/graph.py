@@ -22,6 +22,7 @@ from .ric_seq import load_ric_seq_data
 from .protein import load_intact_interactions, load_biogrid_interactions, load_string_interactions
 from .rna_chrom import load_redc_redchip_data
 from .gtrd import load_gtrd_chip_seq_data
+from .prim_seq import load_prim_seq_data
 from ..shared import memory
 from ..annotations import yalid2state
 from ..ids_mapping import id2yagid, yagid2ids, yapid2ids, yapid2best_id
@@ -71,7 +72,7 @@ def _remove_minor_components(graph: nx.Graph) -> nx.Graph:
 
 @memory.cache
 def build_main_graph(max_workers: int = 2) -> nx.Graph:
-    REBUILD_MAIN_GRAPH = False
+    REBUILD_MAIN_GRAPH = True
 
     if not REBUILD_MAIN_GRAPH:
         with (files('biointergraph.static') / "edges.tsv.gz").open('rb') as file:
@@ -100,7 +101,8 @@ def build_main_graph(max_workers: int = 2) -> nx.Graph:
         ('ENCODE ChIP-seq', load_encode_chip_seq_data,
          dict(assembly='hg38', cell_line='K562')),
         ('Red-C & RedChIP', load_redc_redchip_data, dict()),
-        ('GTRD', load_gtrd_chip_seq_data, dict(cell_line='K562'))
+        ('GTRD', load_gtrd_chip_seq_data, dict(cell_line='K562')),
+        ('PRIM-seq', load_prim_seq_data, dict())
     ]
 
     tqdm_kwargs = dict(total=len(data), unit='dataset',
@@ -272,7 +274,7 @@ def _lighten_graph(graph: nx.Graph, *, inplace: bool = False) -> nx.Graph:
 
 @memory.cache
 def build_light_graph(max_workers: int = 2) -> nx.Graph:
-    REBUILD_LIGHT_GRAPH = False
+    REBUILD_LIGHT_GRAPH = True
 
     if not REBUILD_LIGHT_GRAPH:
         with (files('biointergraph.static') / "edges_light.tsv.gz").open('rb') as file:
