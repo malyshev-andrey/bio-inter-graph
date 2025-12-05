@@ -99,8 +99,12 @@ def _annotate_peaks(
 
     if convert_ids:
         result['source'] = id2yapid('SYMBOL:' + result['source'], strict=True)
-        result['target'] = id2yagid(result['target'], strict=True)
-
+        result['target'] = id2yagid(result['target'])
+        print(
+            'IDs not converted to YAGID:',
+            ','.join(result['target'][~result['target'].str.startswith('YAGID')].unique())
+        )
+        result = result[result['target'].str.startswith('YAGID')]
         result = result.drop_duplicates()
 
     return result
