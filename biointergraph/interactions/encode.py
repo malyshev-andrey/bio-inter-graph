@@ -73,9 +73,13 @@ def _encode_metadata_row2bed(
         colnames: list[str] = BED_COLUMNS,
         filter_func: Callable[[pd.DataFrame], pd.DataFrame] = lambda df: df
     ) -> pd.DataFrame:
+    if colnames == IDR_BED_COLUMNS:
+        usecols = BED_COLUMNS + ['globalIDR']
+    else:
+        usecols = range(len(colnames))
     bed = _read_tsv(
         f'https://www.encodeproject.org{row["Download URL"]}',
-        usecols=range(len(colnames)),
+        usecols=usecols,
         header=None,
         names=colnames,
         chunksize=None,
@@ -107,7 +111,7 @@ def _encode_metadata2bed(
 
 
     result = []
-    with ThreadPoolExecutor(max_workers=100) as executor:
+    with ThreadPoolExecutor(max_workers=10) as executor:
         futures = []
         for _, row in files.iterrows():
             futures.append(executor.submit(
