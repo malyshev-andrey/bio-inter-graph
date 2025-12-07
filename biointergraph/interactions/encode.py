@@ -1,11 +1,11 @@
 from urllib.parse import urlencode
-from typing import Iterable
+from typing import Iterable, Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pandas as pd
 from tqdm.auto import tqdm
 
-from ..shared import memory, BED_COLUMNS
+from ..shared import memory, BED_COLUMNS, _read_tsv
 from ..annotations import (
     load_refseq_bed, load_gencode_bed,
     sanitize_bed, bed_cluster,
@@ -70,13 +70,16 @@ def load_encode_metadata(
 def _encode_metadata_row2bed(
         row: pd.Series,
         features: str|dict|Iterable[str]|None = None,
-        colnames: list[str] = BED_COLUMNS
+        colnames: list[str] = BED_COLUMNS,
+        filter_func: Callable[[pd.DataFrame], pd.DataFrame] = lambda df: df
     ) -> pd.DataFrame:
-    bed = pd.read_csv(
+    bed = _read_tsv(
         f'https://www.encodeproject.org{row["Download URL"]}',
-        sep='\t', usecols=range(len(colnames)),
-        header=None, names=colnames,
-        dtype='str'
+        usecols=range(len(colnames)),
+        header=None,
+        names=colnames,
+        chunksize=None,
+        filter_func=filter_func
     )
     bed['name'] = row['Target label']
 
@@ -95,7 +98,8 @@ def _encode_metadata2bed(
         features: str|dict|Iterable[str]|None = None,
         desc: str|None = None,
         stranded: bool = True,
-        colnames: list[str] = BED_COLUMNS
+        colnames: list[str] = BED_COLUMNS,
+        filter_func: Callable[[pd.DataFrame], pd.DataFrame] = lambda df: df
     ) -> pd.DataFrame:
     if desc is None:
         assay = files['Assay term name'].unique().item()
@@ -108,7 +112,7 @@ def _encode_metadata2bed(
         for _, row in files.iterrows():
             futures.append(executor.submit(
                 _encode_metadata_row2bed,
-                row, features, colnames
+                row, features, colnames, filter_func
             ))
 
         tqdm_kwargs = dict(desc=desc, total=len(futures), unit='file')
@@ -241,7 +245,12 @@ def _load_encode_chip_seq_bed(assembly: str, cell_line: str|None = None) -> pd.D
         ~metadata['Target label'].isin({'POLR2AphosphoS5', 'POLR2AphosphoS2'})
     ]
 
-    result = _encode_metadata2bed(metadata, stranded=False, colnames=IDR_BED_COLUMNS)
+    result = _encode_metadata2bed(
+        metadata,
+        stranded=False,
+        colnames=IDR_BED_COLUMNS,
+        filter_func=lambda df: df[10**(-df['globalIDR'].astype('float')) < 0.05]
+    )
 
     result = bed_cluster(result, by='Name')
 
@@ -251,6 +260,8 @@ def _load_encode_chip_seq_bed(assembly: str, cell_line: str|None = None) -> pd.D
         end=('end', 'max'),
         weight=('globalIDR', 'max')
     )
+
+    result = result.drop(columns='Cluster')
 
     return result
 
