@@ -109,12 +109,20 @@ def bed_intersect(
     return result
 
 
-def bed_merge(bed: pd.DataFrame, **kwargs) -> pd.DataFrame:
+def bed_merge(bed: pd.DataFrame, score_agg_func: str|None = None, **kwargs) -> pd.DataFrame:
     result = _bed2ranges(bed)
 
     result = result.merge(**kwargs)
 
     result = result.df.rename(columns=RANGES2BED)
+
+    if score_agg_func is not None:
+        by = RANGES2BED[kwargs['by']]
+        bed = bed.copy()
+        bed['score'] = bed['score'].astype('int')
+        score_map = bed.groupby(by)['score'].agg(score_agg_func)
+
+        result['score'] = result[by].map(score_map)
     return result
 
 

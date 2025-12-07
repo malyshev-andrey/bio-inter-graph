@@ -244,7 +244,7 @@ def _load_encode_chip_seq_bed(assembly: str, cell_line: str|None = None) -> pd.D
 
     result = _encode_metadata2bed(metadata, stranded=False)
 
-    result = bed_merge(result, by='Name')
+    result = bed_merge(result, by='Name', score_agg_func='max')
 
     return result
 
