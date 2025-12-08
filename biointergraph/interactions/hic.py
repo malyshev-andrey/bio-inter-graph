@@ -57,7 +57,7 @@ def load_hic_data() -> pd.DataFrame:
 
     result = pd.concat([
         result,
-        result.rename({'yalid1': 'yalid2', 'yalid2': 'yalid1'})
+        result.rename(columns={'yalid1': 'yalid2', 'yalid2': 'yalid1'})
     ])
     result = result[result['yalid1'] < result['yalid2']]
 
