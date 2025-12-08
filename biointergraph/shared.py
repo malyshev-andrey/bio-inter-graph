@@ -121,11 +121,13 @@ def _read_tsv(
         session = cached_session if use_cache else requests.Session()
         desc = desc or filepath_or_buffer.split('://')[-1]
 
-        if chunksize is not None and read_csv_kwargs.get('compression', '') != 'zip':
-            if 'compression' not in read_csv_kwargs:
-                if filepath_or_buffer.endswith('.gz'):
-                    read_csv_kwargs['compression'] = 'gzip'
+        if 'compression' not in read_csv_kwargs:
+            if filepath_or_buffer.endswith('.gz'):
+                read_csv_kwargs['compression'] = 'gzip'
+            elif filepath_or_buffer.endswith('.zip'):
+                read_csv_kwargs['compression'] = 'zip'
 
+        if chunksize is not None and read_csv_kwargs.get('compression', '') != 'zip':
             filepath_or_buffer = HttpFileReader(filepath_or_buffer, desc=desc, session=session)
         else:
             response = session.get(filepath_or_buffer)
