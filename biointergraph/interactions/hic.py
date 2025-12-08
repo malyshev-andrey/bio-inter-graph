@@ -55,6 +55,12 @@ def load_hic_data() -> pd.DataFrame:
         validate='many_to_one'
     )
 
+    result = pd.concat([
+        result,
+        result.rename({'yalid1': 'yalid2', 'yalid2': 'yalid1'})
+    ])
+    result = result[result['yalid1'] < result['yalid2']]
+
     result = result.groupby(['yalid1', 'yalid2'], as_index=False, observed=True)['q-value'].min()
 
     assert result.notna().all().all()
