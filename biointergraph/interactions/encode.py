@@ -255,7 +255,7 @@ def _load_encode_chip_seq_bed(assembly: str, cell_line: str|None = None) -> pd.D
     result = bed_cluster(result, by='Name')
 
     result['globalIDR'] = result['globalIDR'].astype('float')
-    result = result.groupby(['chr', 'name', 'Cluster'], as_index=False).agg(
+    result = result.groupby(['chr', 'name', 'Cluster'], as_index=False, observed=True).agg(
         start=('start', 'min'),
         end=('end', 'max'),
         weight=('globalIDR', 'max')
