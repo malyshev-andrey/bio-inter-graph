@@ -117,7 +117,10 @@ def _encode_metadata2bed(
 
         tqdm_kwargs = dict(desc=desc, total=len(futures), unit='file')
         for future in tqdm(as_completed(futures), **tqdm_kwargs):
-            result.append(future.result())
+            try:
+                result.append(future.result())
+            except Exception as exc:
+                raise exc
 
     result = pd.concat(result)
 
