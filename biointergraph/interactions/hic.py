@@ -23,11 +23,13 @@ def load_hic_data() -> pd.DataFrame:
         _read_tsv(
             GOOGLE_DRIVE_URL.format(id=INTER_DATA_ID),
             usecols=['chr1', 'fragmentMid1', 'chr2', 'fragmentMid2', 'q-value'],
-            compression='gzip'
+            compression='gzip',
+            dtype=None
         ),
         _read_tsv(
             GOOGLE_DRIVE_URL.format(id=INTRA_DATA_ID),
-            compression='gzip'
+            compression='gzip',
+            dtype=None
         )
     ])
 
@@ -53,7 +55,6 @@ def load_hic_data() -> pd.DataFrame:
         validate='many_to_one'
     )
 
-    result['q-value'] = result['q-value'].astype('float')
     result = result.groupby(['yalid1', 'yalid2'], as_index=False, observed=True)['q-value'].min()
 
     assert result.notna().all().all()
