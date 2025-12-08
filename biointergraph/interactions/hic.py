@@ -15,7 +15,7 @@ def _get_bin2yalid_map(bins: pd.DataFrame) -> pd.DataFrame:
         unify_chr_assembly='hg38'
     )
     assert not bins[['chr', 'mid']].duplicated().any()
-    return result[['chr', 'mid', 'name1']]
+    return result[['chr', 'mid', 'name']]
 
 
 def load_hic_data() -> pd.DataFrame:
@@ -46,11 +46,11 @@ def load_hic_data() -> pd.DataFrame:
     bin2yalid_map = _get_bin2yalid_map(bins)
 
     result = result.merge(
-        bin2yalid_map.rename(columns={'chr': 'chr1', 'mid': 'fragmentMid1', 'name1': 'yalid1'}),
+        bin2yalid_map.rename(columns={'chr': 'chr1', 'mid': 'fragmentMid1', 'name': 'yalid1'}),
         how='left',
         validate='many_to_one'
     ).merge(
-        bin2yalid_map.rename(columns={'chr': 'chr2', 'mid': 'fragmentMid2', 'name1': 'yalid2'}),
+        bin2yalid_map.rename(columns={'chr': 'chr2', 'mid': 'fragmentMid2', 'name': 'yalid2'}),
         how='left',
         validate='many_to_one'
     )
