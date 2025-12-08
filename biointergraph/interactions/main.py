@@ -94,8 +94,8 @@ def _annotate_peaks(
         print(f'{desc} peaks without intersections: {no_intersect.sum()}')
     result = result[~no_intersect]
 
-    result = result[['name', 'name2']]
-    result.columns = 'source', 'target'
+    result = result[['name', 'name2'] + (['weight'] if 'weight' in peaks.columns else [])]
+    result = result.rename(columns={'name': 'source', 'name2': 'target'})
 
     if convert_ids:
         result['source'] = id2yapid('SYMBOL:' + result['source'], strict=True)

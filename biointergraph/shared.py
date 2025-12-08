@@ -1,13 +1,14 @@
 import os
+from io import BytesIO
 import hashlib
 from pathlib import Path
-from typing import Callable, IO
+from typing import Callable, IO, Optional
 
 from joblib import Memory
 import requests
+import requests_cache
 import pandas as pd
 from tqdm.auto import tqdm
-from zipfile import is_zipfile
 
 # schemas
 GFF_COLUMNS = [
@@ -46,11 +47,22 @@ cache_dir = os.path.join(
 os.makedirs(cache_dir, exist_ok=True)
 memory = Memory(cache_dir, verbose=0)
 
+cached_session = requests_cache.CachedSession(
+    cache_name=cache_dir,
+    backend="filesystem",
+    expire_after=0  # never expire
+)
 
 class HttpFileReader:
-    def __init__(self, url: str, chunk_size: int = 1024*1024, desc: str = ''):
+    def __init__(
+            self,
+            url: str,
+            chunk_size: int = 1024*1024,
+            desc: str = '',
+            session: Optional[requests.Session] = None
+        ):
         def reader():
-            response = requests.get(url, stream=True)
+            response = (session or requests).get(url, stream=True)
             response.raise_for_status()
             size = int(response.headers.get('Content-Length', 0))
             with tqdm(desc=desc, total=size, unit='B', unit_scale=True) as progress_bar:
@@ -60,7 +72,6 @@ class HttpFileReader:
 
         self.reader = reader()
         self.buffer = b''
-
 
     def read(self, n: int = -1):
         if n < 0:
@@ -83,11 +94,19 @@ class HttpFileReader:
         return result
 
 
+def _is_http(filepath_or_buffer: str | Path | IO[str]) -> bool:
+    result = (
+        isinstance(filepath_or_buffer, str) and
+        filepath_or_buffer.split('://')[0] in ('http', 'https')
+    )
+    return result
+
 def _read_tsv(
         filepath_or_buffer: str | Path | IO[str], *,
         filter_func: Callable[[pd.DataFrame], pd.DataFrame] = lambda df: df,
         chunksize: int | None = CHUNKSIZE,
         desc: str = '',
+        use_cache: bool = True,
         **kwargs
     ) -> pd.DataFrame:
 
@@ -97,30 +116,35 @@ def _read_tsv(
     )
     read_csv_kwargs.update(kwargs)
 
-    if isinstance(filepath_or_buffer, str):
+    if _is_http(filepath_or_buffer):
+        session = cached_session if use_cache else requests.Session()
         desc = desc or filepath_or_buffer.split('://')[-1]
-        is_zip = read_csv_kwargs.get('compression', filepath_or_buffer[-3:]) == 'zip'
-        if chunksize is not None and filepath_or_buffer.startswith('http') and not is_zip:
-            if 'compression' not in read_csv_kwargs:
-                if filepath_or_buffer.endswith('.gz'):
-                    read_csv_kwargs['compression'] = 'gzip'
-                elif filepath_or_buffer.endswith('.zip'):
-                    read_csv_kwargs['compression'] = 'zip'
-            reader = pd.read_csv(
-                HttpFileReader(filepath_or_buffer, desc=desc),
-                chunksize=chunksize,
-                **read_csv_kwargs
-            )
-            reader = map(filter_func, reader)
-            return pd.concat(reader)
 
+        if 'compression' not in read_csv_kwargs:
+            if filepath_or_buffer.endswith('.gz'):
+                read_csv_kwargs['compression'] = 'gzip'
+            elif filepath_or_buffer.endswith('.zip'):
+                read_csv_kwargs['compression'] = 'zip'
+
+        if read_csv_kwargs.get('compression', '') != 'zip':
+            filepath_or_buffer = HttpFileReader(filepath_or_buffer, desc=desc, session=session)
+        else:
+            response = session.get(filepath_or_buffer)
+            response.raise_for_status()
+            filepath_or_buffer = BytesIO(response.content)
 
     if chunksize is None:
         return filter_func(pd.read_csv(filepath_or_buffer, **read_csv_kwargs))
 
+    reader = pd.read_csv(filepath_or_buffer, chunksize=chunksize, **read_csv_kwargs)
+
+    if isinstance(filepath_or_buffer, HttpFileReader):
+        reader = map(filter_func, reader)
+        return pd.concat(reader)
+
     with tqdm(desc=desc, unit='row') as progress_bar:
         result = []
-        for chunk in pd.read_csv(filepath_or_buffer, chunksize=chunksize, **read_csv_kwargs):
+        for chunk in reader:
             progress_bar.update(chunk.shape[0])
             result.append(filter_func(chunk))
         result = pd.concat(result)

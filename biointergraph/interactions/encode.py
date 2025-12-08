@@ -280,6 +280,7 @@ def load_encode_chip_seq_data(assembly: str, cell_line: str|None = None) -> pd.D
     )
 
     result['source'] = id2yapid('SYMBOL:' + result['source'], strict=True)
-    result = result.drop_duplicates()
+
+    result = result.groupby(['source', 'target'], as_index=False, observed=True)['weight'].max()
 
     return result
