@@ -107,7 +107,7 @@ def _read_tsv(
         filter_func: Callable[[pd.DataFrame], pd.DataFrame] = lambda df: df,
         chunksize: int | None = CHUNKSIZE,
         desc: str = '',
-        use_cache: bool = True,
+        use_cache: bool = False,
         **kwargs
     ) -> pd.DataFrame:
 
