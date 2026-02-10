@@ -105,6 +105,10 @@ def _annotate_peaks(
             ','.join(result['target'][~result['target'].str.startswith('YAGID')].unique())
         )
         result = result[result['target'].str.startswith('YAGID')]
-        result = result.drop_duplicates()
+
+        if 'weight' in result.columns:
+            result = result.groupby(['source', 'target'], as_index=False, observed=True)['weight'].max()
+        else:
+            result = result.drop_duplicates()
 
     return result

@@ -22,6 +22,12 @@ IDR_BED_COLUMNS = BED_COLUMNS + [
     'localIDR', 'globalIDR'
 ]
 
+NARROW_PEAK_BED_COLUMNS = BED_COLUMNS + [
+    'signalValue',
+    'p_value', 'q_value',
+    'summit'
+]
+
 def load_encode_metadata(
         assay: str|Iterable[str] = (), *,
         entity_type: str = 'File',
@@ -146,7 +152,11 @@ def _load_encode_eclip_bed(assembly: str, cell_line: str|None = None) -> pd.Data
     assert replicates.value_counts(normalize=True).eq(1/3).all()
     metadata = metadata[replicates.eq('1,2')]
 
-    result = _encode_metadata2bed(metadata, features={'cell_line': 'Biosample name'})
+    result = _encode_metadata2bed(
+        metadata,
+        features={'cell_line': 'Biosample name'},
+        colnames=NARROW_PEAK_BED_COLUMNS
+    )
 
     return result
 
