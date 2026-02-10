@@ -21,6 +21,8 @@ def _bigbed2bed(path_or_url: str, name: str, *, converter: str) -> pd.DataFrame:
 
     path_or_url = remote_file2local(path_or_url, progress_bar=False)
 
+    path_or_url = path_or_url.removeprefix('file://')
+
     cmd = f'{converter} {path_or_url} {bed.name}'
     subprocess.run(shlex.split(cmd), check=True)
 
