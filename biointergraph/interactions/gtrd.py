@@ -84,7 +84,7 @@ def _load_gtrd_metadata(cell_line: str|None = None) -> pd.DataFrame:
         engine='python'
     )
     result['path'] = result['html'].str.extract(r"href='([^']+)'", expand=False)
-    result['path'] = result.str.replace('/egrid', '/downloads/current')
+    result['path'] = result['path'].str.replace('/egrid', '/downloads/current')
     result['file'] = result['path'].str.split('/', expand=True).iloc[:,-1]
 
     regex = r'^(?P<symbol>[A-Z0-9]+)_(?P<uniprot>[A-Z0-9]{6})_Meta-clusters_(?P<cell_id>\d+).bb$'
