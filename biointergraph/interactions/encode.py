@@ -79,7 +79,8 @@ def _encode_metadata_row2bed(
         header=None,
         names=colnames,
         chunksize=None,
-        filter_func=filter_func
+        filter_func=filter_func,
+        use_cache=True
     )
     bed['name'] = row['Target label']
 
