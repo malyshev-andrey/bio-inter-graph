@@ -40,7 +40,7 @@ def load_postar3_data(species: str, cell_line: str, annotation: str, **kwargs) -
     }[annotation](assembly='hg38', feature='gene')
 
     result = _annotate_peaks(
-        result[BED_COLUMNS].copy(), annotation,
+        result[BED_COLUMNS + ['weight']].copy(), annotation,
         assembly='hg38',
         desc='POSTAR3',
         convert_ids=True
