@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pandas as pd
 import requests
+import numpy as np
 from tqdm.auto import tqdm
 
 from ..shared import BED_COLUMNS, _read_tsv, memory, remote_file2local
@@ -29,13 +30,26 @@ def _bigbed2bed(path_or_url: str, name: str, *, converter: str) -> pd.DataFrame:
     result = _read_tsv(
         bed.name,
         header=None,
-        usecols=range(6),
-        names=BED_COLUMNS,
+        names=[
+            'chr', 'start', 'end',
+            'name', 'summit',
+            'chipSeqExpCount',
+            'chipExoExpCount',
+            'dnasePeakCount',
+            'motifCount'
+        ],
         chunksize=None
     )
     result['name'] = name
 
     os.remove(bed.name)
+
+    result['weight'] = (
+        0.40 * np.log1p(result['chipSeqExpCount'].astype('float'))
+        + 0.25 * np.log1p(result['chipExoExpCount'].astype('float'))
+        + 0.25 * np.log1p(result['dnasePeakCount'].astype('float'))
+        + 0.1 * np.log1p(result['motifCount'].astype('float'))
+    )
 
     return result
 
@@ -123,11 +137,13 @@ def load_gtrd_chip_seq_data(cell_line: str|None = None) -> pd.DataFrame:
     result = _annotate_peaks(
         peaks, annotation,
         assembly='hg38',
+        desc='GTRD ChIP-seq',
         stranded=False,
-        convert_ids=False
+        drop_duplicates=False
     )
 
     result['source'] = id2yapid(result['source'], strict=True)
-    result = result.drop_duplicates()
+
+    result = result.groupby(['source', 'target'], as_index=False, observed=True)['weight'].max()
 
     return result
