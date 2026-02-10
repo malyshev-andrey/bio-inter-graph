@@ -1,11 +1,11 @@
 import os
 import json
 import re
-from io import BytesIO
 import hashlib
 from pathlib import Path
 from typing import Callable, IO
 from time import time
+import shutil
 from urllib.parse import urlencode, urlsplit, urlunsplit, parse_qsl
 
 from joblib import Memory
@@ -53,6 +53,16 @@ cache_dir = os.path.join(
 )
 fsspec_cache_dir = os.path.join(cache_dir, 'fsspec')
 memory = Memory(cache_dir, verbose=0)
+
+
+def _clear_fsspec_cache():
+    dir_path = Path(fsspec_cache_dir)
+
+    for p in dir_path.iterdir():
+        if p.is_dir():
+            shutil.rmtree(p)
+        else:
+            p.unlink()
 
 
 def _shorten_url(url: str, max_len: int = 70, ellipsis: str = "...") -> str:
@@ -143,14 +153,7 @@ def remote_file2local(
                 sort_keys=True
             )
 
-    if remote_path.endswith('.gz'):
-        prefix = 'gzip::'
-    elif remote_path.endswith('.zip'):
-        prefix = 'zip::'
-    else:
-        prefix = ''
-
-    parts[-1] = prefix + f'file://{local_path}'
+    parts[-1] = f'file://{local_path}'
 
     new_url = '::'.join(parts)
     return new_url
@@ -175,6 +178,11 @@ def _read_tsv(
         desc = 'READING: ' + _shorten_url(filepath_or_buffer)
 
     if use_cache and isinstance(filepath_or_buffer, str):
+        if 'compression' not in read_csv_kwargs:
+            if filepath_or_buffer.endswith('.gz'):
+                read_csv_kwargs['compression'] = 'gzip'
+            elif filepath_or_buffer.endswith('.zip'):
+                read_csv_kwargs['compression'] = 'zip'
         filepath_or_buffer = remote_file2local(filepath_or_buffer, progress_bar=chunksize is not None)
 
     if chunksize is None:
