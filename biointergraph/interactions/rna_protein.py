@@ -18,6 +18,7 @@ def _load_postar3_peaks(species: str = 'human', **kwargs) -> pd.DataFrame:
 
     result = _read_tsv(
         f'https://cloud.tsinghua.edu.cn/d/8133e49661e24ef7a915/files/?dl=1&p={species}.txt.gz',
+        use_cache=True,
         **default_kwargs
     )
     return result
