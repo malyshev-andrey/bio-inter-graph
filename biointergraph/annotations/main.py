@@ -71,6 +71,7 @@ def read_feature_table(
         comment='#',
         header=None,
         names=GFF_COLUMNS,
+        use_cache=True,
         **kwargs
     )
 
