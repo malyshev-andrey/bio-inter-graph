@@ -31,6 +31,9 @@ def load_postar3_data(species: str, cell_line: str, annotation: str, **kwargs) -
         filter_func=lambda df: df[df['cell_line'].eq(cell_line)],
         **kwargs
     )
+
+    result['weight'] = result['score'].astype('float')
+
     annotation = {
         'gencode': load_gencode_bed,
         'refseq': load_refseq_bed
