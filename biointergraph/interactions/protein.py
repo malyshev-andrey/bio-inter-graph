@@ -85,7 +85,8 @@ def load_intact_interactions() -> pd.DataFrame:
             'Taxid interactor B',
             'Interaction type(s)',
             'Type(s) interactor A',
-            'Type(s) interactor B'
+            'Type(s) interactor B',
+            'Confidence value(s)'
         ],
         filter_func=lambda df: df[
             df['Type(s) interactor A'].eq('psi-mi:"MI:0326"(protein)') &
@@ -98,7 +99,8 @@ def load_intact_interactions() -> pd.DataFrame:
                 'psi-mi:"MI:0407"(direct interaction)'
             })
         ],
-        na_values=['-']
+        na_values=['-'],
+        use_cache=True
     )
 
     result['PMID'] = result['Publication Identifier(s)'].str.extract(r'pubmed:(\d+)', expand=False)
@@ -122,9 +124,17 @@ def load_intact_interactions() -> pd.DataFrame:
     ])
     result = result[result['yapid1'] < result['yapid2']]
 
-    result = result.drop_duplicates(['yapid1', 'yapid2', 'PMID', 'Interaction detection method(s)'])
-    result = result.groupby(['yapid1', 'yapid2'], as_index=False).size()
-    result = result[result['size'] > 1]
-    result = result[['yapid1', 'yapid2']]
+    result['weight'] = result['Confidence value(s)'].str.extract(r'intact\-miscore:([0-9\.]+)').astype('float')
+
+    result = result.grouby(
+        ['yapid1', 'yapid2', 'PMID', 'Interaction detection method(s)'],
+        as_index=False,
+        observed=True
+    )['weight'].max()
+    result = result.groupby(['yapid1', 'yapid2'], as_index=False, observed=True).agg(
+        size=('weight', 'size'),
+        weight=('weight', 'max')
+    )
+    result = result.loc[result['size'] > 1, ['yapid1', 'yapid2', 'weight']]
 
     return result
