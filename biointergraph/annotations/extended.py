@@ -18,6 +18,7 @@ def load_extended_annotation(convert2bed: bool = False, **kwargs) -> pd.DataFram
     default_kwargs.update(kwargs)
     result = _read_tsv(
         GOOGLE_DRIVE_URL.format(id='1n2VDbdYe-0di0PVjOKxxk0hZgC914l4e'),
+        use_cache=True,
         **default_kwargs
     )
 
