@@ -195,7 +195,10 @@ def load_encode_iclip_data(annotation: str, *, cell_line: str|None = None) -> pd
         colnames=IDR_BED_COLUMNS[:10]
     )
 
-    peaks['weight'] = -np.log10(peaks['p_value'].astype('float'))
+    peaks['weight'] = -np.log10(np.maximum(
+        peaks['p_value'].astype('float'),
+        peaks['q_value'].astype('float')
+    ))
 
     annotation = {
         'gencode': load_gencode_bed,
