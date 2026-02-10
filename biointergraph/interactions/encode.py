@@ -2,6 +2,7 @@ from urllib.parse import urlencode
 from typing import Iterable, Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
@@ -188,7 +189,13 @@ def load_encode_iclip_data(annotation: str, *, cell_line: str|None = None) -> pd
         processed='true',
         assembly='hg19'
     )
-    peaks = _encode_metadata2bed(metadata, features={'repl': 'Biological replicates'})
+    peaks = _encode_metadata2bed(
+        metadata,
+        features={'repl': 'Biological replicates'},
+        colnames=IDR_BED_COLUMNS[:10]
+    )
+
+    peaks['weight'] = -np.log10(peaks['p_value'].astype('float'))
 
     annotation = {
         'gencode': load_gencode_bed,
@@ -202,7 +209,16 @@ def load_encode_iclip_data(annotation: str, *, cell_line: str|None = None) -> pd
         result.append(
             _annotate_peaks(repl, annotation, assembly='hg19', convert_ids=True)
         )
-    result = result[0].merge(result[1], how='inner', validate='one_to_one')
+    result = result[0].rename(columns={'weight': 'weight1'}).merge(
+        result[1].rename(columns={'weight': 'weight2'}),
+        how='inner',
+        validate='one_to_one',
+        on=['target', 'source']
+    )
+
+    result['weight'] = np.maximum(result['weight1'], result['weight2'])
+
+    result = result.drop(columns=['weight1', 'weight2'])
 
     return result
 
