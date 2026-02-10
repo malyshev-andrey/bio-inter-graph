@@ -85,6 +85,7 @@ def _load_single_karr_seq(path, **kwargs) -> pd.DataFrame:
                     'seqid2', 'pos2',
                     'strand1', 'strand2'
                 ],
+                use_cache=True,
                 **kwargs
             )
             break
