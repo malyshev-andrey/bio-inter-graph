@@ -40,8 +40,11 @@ def load_biogrid_interactions() -> pd.DataFrame:
             df['Organism ID Interactor B'].eq('9606') &
             ~df['Experimental System'].isin({'Protein-RNA', 'Affinity Capture-RNA'}) &
             _is_appropriate_qualifications(df['Qualifications'])
-        ]
+        ],
+        use_cache=True
     )
+
+    result['weight'] = 1.0
 
     assert result['Organism Name Interactor A'].eq('Homo sapiens').all()
     assert result['Organism Name Interactor B'].eq('Homo sapiens').all()
@@ -51,7 +54,8 @@ def load_biogrid_interactions() -> pd.DataFrame:
 
     result = _to_pairwise(
         result['BioGRID ID Interactor A'],
-        result['BioGRID ID Interactor B']
+        result['BioGRID ID Interactor B'],
+        result['weight']
     )
 
     return result
