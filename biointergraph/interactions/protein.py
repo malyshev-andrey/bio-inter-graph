@@ -4,10 +4,11 @@ from ..shared import memory, _read_tsv
 from ..ids_mapping import id2yapid
 
 
-def _to_pairwise(id1: pd.Series, id2: pd.Series) -> pd.DataFrame:
+def _to_pairwise(id1: pd.Series, id2: pd.Series, weight) -> pd.DataFrame:
     result = pd.DataFrame({
         'yapid1': id2yapid(id1),
-        'yapid2': id2yapid(id2)
+        'yapid2': id2yapid(id2),
+        'weight': weight
     })
     assert result['yapid1'].str.startswith('YAPID').all()
     assert result['yapid2'].str.startswith('YAPID').all()
@@ -17,7 +18,9 @@ def _to_pairwise(id1: pd.Series, id2: pd.Series) -> pd.DataFrame:
         result.rename(columns={'yapid1': 'yapid2', 'yapid2': 'yapid1'})
     ])
     result = result[result['yapid1'] < result['yapid2']]
-    result = result.drop_duplicates()
+
+    result = result.groupby(['yapid1', 'yapid2'], as_index=False, observed=True)['weight'].max()
+
     return result
 
 
@@ -58,7 +61,7 @@ def load_biogrid_interactions() -> pd.DataFrame:
 def load_string_interactions(min_score: int = 700) -> pd.DataFrame:
     result = _read_tsv(
         f'https://stringdb-downloads.org/download/stream/protein.physical.links.v12.0/9606.protein.physical.links.v12.0.min{min_score}.onlyAB.tsv.gz',
-        usecols=['protein1', 'protein2']
+        use_cache=True
     )
 
     id_regex = r'^9606.ENSP\d{11}$'
@@ -68,7 +71,9 @@ def load_string_interactions(min_score: int = 700) -> pd.DataFrame:
     result['protein1'] = result['protein1'].str.removeprefix('9606.')
     result['protein2'] = result['protein2'].str.removeprefix('9606.')
 
-    result = _to_pairwise(result['protein1'], result['protein2'])
+    result['weight'] = result['combined_score'].astype('float')
+
+    result = _to_pairwise(result['protein1'], result['protein2'], result['weight'])
     return result
 
 
