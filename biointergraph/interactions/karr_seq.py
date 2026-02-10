@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from ..shared import memory
@@ -43,15 +44,18 @@ def load_karr_seq_data(cell_line: str|None, pvalue: float|None = None) -> pd.Dat
     if pvalue is not None:
         result = result[result['pvalue'] < pvalue]
 
+    result['weight'] = -np.log10(result['pvalue'])
+
     result = pd.DataFrame({
         'yagid1': id2yagid(result['seqid1'], strict=True),
-        'yagid2': id2yagid(result['seqid2'], strict=True)
+        'yagid2': id2yagid(result['seqid2'], strict=True),
+        'weight': result['weight']
     })
 
     swap_mask = result['yagid1'] > result['yagid2']
     result.loc[swap_mask, ['yagid1', 'yagid2']] = result.loc[swap_mask, ['yagid2', 'yagid1']].values
     result = result[result['yagid1'] < result['yagid2']]
 
-    result = result.drop_duplicates()
+    result = result.groupby(['yagid1', 'yagid2'], as_index=False, observed=True)['weight'].max()
 
     return result
