@@ -22,12 +22,6 @@ IDR_BED_COLUMNS = BED_COLUMNS + [
     'localIDR', 'globalIDR'
 ]
 
-NARROW_PEAK_BED_COLUMNS = BED_COLUMNS + [
-    'signalValue',
-    'p_value', 'q_value',
-    'summit'
-]
-
 def load_encode_metadata(
         assay: str|Iterable[str] = (), *,
         entity_type: str = 'File',
@@ -155,7 +149,7 @@ def _load_encode_eclip_bed(assembly: str, cell_line: str|None = None) -> pd.Data
     result = _encode_metadata2bed(
         metadata,
         features={'cell_line': 'Biosample name'},
-        colnames=NARROW_PEAK_BED_COLUMNS
+        colnames=IDR_BED_COLUMNS[:10]
     )
 
     result['weight'] = result['p_value'].astype('float')
@@ -227,7 +221,14 @@ def load_encode_rip_data(annotation: str, *, cell_line: str|None = None):
         ~metadata['Target label'].eq('T7')
     ]
 
-    result = _encode_metadata2bed(metadata, stranded=False, desc='RIP-seq, RIP-chip')
+    result = _encode_metadata2bed(
+        metadata,
+        stranded=False,
+        desc='RIP-seq, RIP-chip',
+        colnames=IDR_BED_COLUMNS[:9]
+    )
+
+    result['weight'] = result['p_value'].astype('float')
 
     annotation = {
         'gencode': load_gencode_bed,
