@@ -103,7 +103,7 @@ def _encode_metadata2bed(
         filter_func: Callable[[pd.DataFrame], pd.DataFrame] = lambda df: df
     ) -> pd.DataFrame:
     if desc is None:
-        assay = files['Assay term name'].unique().item()
+        assay, = files['Assay term name'].unique()
         desc = f'ENCODE {assay}'
 
 
