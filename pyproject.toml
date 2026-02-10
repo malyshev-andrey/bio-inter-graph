@@ -19,5 +19,6 @@ dependencies = [
     "PyRanges>=0.0.114",
     "joblib>=1.2.0,<2.0.0",
     "networkx>=2.6",
-    "requests-cache>=1.2.1"
+    "requests-cache>=1.2.1",
+    "fsspec>=2026.2.0"
 ]
