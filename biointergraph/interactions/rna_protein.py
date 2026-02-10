@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from ..annotations import load_gencode_bed, load_refseq_bed
@@ -52,13 +53,15 @@ def load_postar3_data(species: str, cell_line: str, annotation: str, **kwargs) -
 @memory.cache
 def load_frip_seq_data() -> pd.DataFrame:
     result = pd.concat([
-        pd.read_csv(
+        _read_tsv(
             'https://ftp.ncbi.nlm.nih.gov/geo/series/GSE67nnn/GSE67963/suppl/GSE67963_significance_calls_genes.txt.gz',
-            sep='\t'
+            sep='\t',
+            use_cache=True
         ),
-        pd.read_csv(
+        _read_tsv(
             'https://ftp.ncbi.nlm.nih.gov/geo/series/GSE67nnn/GSE67963/suppl/GSE67963_significance_calls_isoforms.txt.gz',
-            sep='\t'
+            sep='\t',
+            use_cache=True
         )
     ])
     result = result[result['significant'].eq('yes')]
@@ -98,7 +101,8 @@ def load_frip_seq_data() -> pd.DataFrame:
     result['yapid'] = id2yapid('SYMBOL:' + result['sample_1'])
     result = result[result['yapid'].str.startswith('YAPID')]
 
-    result = result[['yagid', 'yapid']]
-    result = result.drop_duplicates()
+    result['weight'] = -np.log10(result['p_value'].astype('float'))
+
+    result = result.groupby(['yagid', 'yapid'], as_index=False, observed=True)['weight'].max()
 
     return result
