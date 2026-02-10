@@ -158,7 +158,7 @@ def _load_encode_eclip_bed(assembly: str, cell_line: str|None = None) -> pd.Data
         colnames=NARROW_PEAK_BED_COLUMNS
     )
 
-    result['weight'] = result['p_value']
+    result['weight'] = result['p_value'].astype('float')
 
     return result
 
