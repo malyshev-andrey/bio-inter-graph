@@ -11,8 +11,9 @@ def load_redc_redchip_data() -> pd.DataFrame:
     result = _read_tsv(
         GOOGLE_DRIVE_URL.format(id='1nkg0Iofz8azz6BEfISWXG_DNQMlHEbi6'),
         compression='zip',
-        desc='Red-C, RedChIP',
-        usecols=lambda name: name not in {'ID', 'sample'}
+        desc='READING Red-C, RedChIP',
+        usecols=lambda name: name not in {'ID', 'sample'},
+        use_cache=True
     )
 
     names_map = {
@@ -26,10 +27,12 @@ def load_redc_redchip_data() -> pd.DataFrame:
     result = result.merge(annotation, how='left', validate='many_to_one')
     assert not result['name'].isna().any()
 
+    result['weight'] = 1.0
+
     cols = ['chr', 'start', 'end', 'name']
     result = result.rename(columns={f'{c}2': c for c in cols})
-    result = result[cols]
-    result = result.drop_duplicates()
+    result = result[cols + ['weight']]
+    result = result.sort_values('weight', ascending=False).drop_duplicates(cols, keep='first')
 
     result = _annotate_peaks(
         result, load_chromhmm_annotation(),
@@ -38,6 +41,6 @@ def load_redc_redchip_data() -> pd.DataFrame:
     )
 
     result['source'] = id2yagid(result['source'], strict=True)
-    result = result.drop_duplicates()
+    result = result.groupby(['source', 'target'], as_index=False, observed=True)['weight'].max()
 
     return result
