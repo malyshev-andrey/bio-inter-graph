@@ -128,7 +128,7 @@ def load_intact_interactions() -> pd.DataFrame:
 
     result['weight'] = result['Confidence value(s)'].str.extract(r'intact\-miscore:([0-9\.]+)').astype('float')
 
-    result = result.grouby(
+    result = result.groupby(
         ['yapid1', 'yapid2', 'PMID', 'Interaction detection method(s)'],
         as_index=False,
         observed=True
