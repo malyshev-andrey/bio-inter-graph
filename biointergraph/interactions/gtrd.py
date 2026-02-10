@@ -9,7 +9,7 @@ import pandas as pd
 import requests
 from tqdm.auto import tqdm
 
-from ..shared import BED_COLUMNS, _read_tsv, memory
+from ..shared import BED_COLUMNS, _read_tsv, memory, remote_file2local
 from .main import _annotate_peaks
 from ..annotations import load_chromhmm_annotation, sanitize_bed
 from ..ids_mapping import id2yapid
@@ -18,6 +18,8 @@ from ..ids_mapping import id2yapid
 def _bigbed2bed(path_or_url: str, name: str, *, converter: str) -> pd.DataFrame:
     bed = tempfile.NamedTemporaryFile(delete=False)
     bed.close()
+
+    path_or_url = remote_file2local(path_or_url, progress_bar=False)
 
     cmd = f'{converter} {path_or_url} {bed.name}'
     subprocess.run(shlex.split(cmd), check=True)
@@ -73,7 +75,7 @@ def _gtrd_metadata2bed(metadata: pd.DataFrame) -> pd.DataFrame:
 
 def _load_gtrd_metadata(cell_line: str|None = None) -> pd.DataFrame:
     result = pd.read_csv(
-        'http://gtrd.biouml.org:8888/egrid/bigBeds/hg38/ChIP-seq/Meta-clusters_by_TF_and_Cell_Type',
+        'http://gtrd.biouml.org:8888/downloads/current/bigBeds/hg38/ChIP-seq/Meta-clusters_by_TF_and_Cell_Type',
         sep='\t',
         header=None,
         skiprows=14,
