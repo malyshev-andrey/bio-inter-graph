@@ -1,6 +1,7 @@
 from io import StringIO
 
 import requests
+import numpy as np
 import pandas as pd
 
 from ..shared import _read_tsv, memory
@@ -22,6 +23,7 @@ def _read_prim_seq_chimeric_reads(link: str, **kwargs) -> pd.DataFrame:
         skiprows=1,
         names=list(header.iloc[0]) + ['R1GeneType', 'R2GeneType'],
         sep=',',
+        use_cache=True,
         **kwargs
     )
     return result
@@ -52,6 +54,7 @@ def _get_prim_seq_ids_mapping() -> pd.Series:
 
     return result
 
+@memory.cache
 def load_prim_seq_data():
     response = requests.get('https://sysbiocomp.ucsd.edu/prim/HuRPA.csv', verify=False)
     response.raise_for_status()
@@ -63,8 +66,13 @@ def load_prim_seq_data():
 
     result['yapid'] = id2yapid('SYMBOL:' + result['protein'])
 
-    result = result[result['yapid'].str.startswith('YAPID') & result['yagid'].str.startswith('YAGID')]
+    result = result[
+        result['yapid'].str.startswith('YAPID') &
+        result['yagid'].str.startswith('YAGID')
+    ]
 
-    result = result[['yagid', 'yapid']].drop_duplicates()
+    result['weight'] = -np.log10(result['BH-corrected p-value'].astype('float'))
+
+    result = result.groupby(['yagid', 'yapid'], observed=True, as_index=False)['weight'].max()
 
     return result
