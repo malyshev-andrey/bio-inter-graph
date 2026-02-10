@@ -1,8 +1,8 @@
+import numpy as np
 import pandas as pd
-from tqdm.auto import tqdm
 
 from ..annotations import load_extended_annotation
-from ..shared import memory, CHUNKSIZE
+from ..shared import memory, CHUNKSIZE, _read_tsv
 from ..ids_mapping import id2yagid
 
 
@@ -13,23 +13,18 @@ def _ricseq_loader(
     ) -> pd.DataFrame:
     url = f'https://drive.usercontent.google.com/download?id={id}&export=download&confirm=t'
 
-    default_kwargs = dict(
-        sep='\t',
-        compression='gzip',
-        dtype='str'
-    )
-    if chunksize is None:
-        result = pd.read_csv(url, **default_kwargs)
-    else:
-        result = []
-        with tqdm(desc=url) as progress_bar:
-            for chunk in pd.read_csv(url, chunksize=chunksize, **default_kwargs):
-                progress_bar.update(chunk.shape[0])
-                result.append(chunk)
-        result = pd.concat(result)
-
     if pvalue is not None:
-        result = result[result['p_adj'].astype('float') < pvalue]
+        filter_func = lambda df: df[df['p_adj'].astype('float') < pvalue]
+    else:
+        filter_func = lambda df: df
+
+    result = _read_tsv(
+        url,
+        compression='gzip',
+        chunksize=chunksize,
+        use_cache=True,
+        filter_func=filter_func
+    )
 
     return result
 
@@ -108,7 +103,9 @@ def load_ric_seq_data(pvalue: float|None = None, **kwargs) -> pd.DataFrame:
         ricpipe
     ])
 
-    assert (result['p_adj'].astype('float') < pvalue).all() or pvalue is None
+    result['p_adj'] = result['p_adj'].astype('float')
+
+    assert (result['p_adj'] < pvalue).all() or pvalue is None
 
     print(result.groupby(['pipeline', 'annotation']).size())
 
@@ -119,14 +116,15 @@ def load_ric_seq_data(pvalue: float|None = None, **kwargs) -> pd.DataFrame:
         result['yagid2'].str.startswith('YAGID').all()
     )
 
-    ids = ['yagid1', 'yagid2']
-    result = result[ids]
-    swap = dict(zip(ids, ids[::-1]))
+    result['weight'] = -np.log10(result['p_adj'])
+
+    result = result[['yagid1', 'yagid2', 'weight']]
     result = pd.concat([
         result,
-        result.rename(columns=swap)
+        result.rename(columns={'yagid1': 'yagid2', 'yagid2': 'yagid1'})
     ])
     result = result[result['yagid1'] < result['yagid2']]
-    result = result.drop_duplicates()
+
+    result = result.groupby(['yagid1', 'yagid2'], as_index=False, observed=True)['weight'].max()
 
     return result
