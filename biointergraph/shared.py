@@ -143,7 +143,14 @@ def remote_file2local(
                 sort_keys=True
             )
 
-    parts[-1] = f'file://{local_path}'
+    if remote_path.endswith('.gz'):
+        prefix = 'gzip::'
+    elif remote_path.endswith('.zip'):
+        prefix = 'zip::'
+    else:
+        prefix = ''
+
+    parts[-1] = prefix + f'file://{local_path}'
 
     new_url = '::'.join(parts)
     return new_url
