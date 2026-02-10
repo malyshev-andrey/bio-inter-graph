@@ -1,2 +1,4 @@
 .ropeproject
 .mypy_cache
+uv.lock
+*.egg-info/

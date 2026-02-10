@@ -1,14 +1,21 @@
 import os
+import json
+import re
 from io import BytesIO
 import hashlib
 from pathlib import Path
 from typing import Callable, IO, Optional
+from time import time
+from urllib.parse import urlencode, urlsplit, urlunsplit, parse_qsl
 
 from joblib import Memory
 import requests
 import requests_cache
 import pandas as pd
 from tqdm.auto import tqdm
+
+import fsspec
+from fsspec.callbacks import TqdmCallback
 
 # schemas
 GFF_COLUMNS = [
@@ -38,6 +45,8 @@ GOOGLE_DRIVE_URL = 'https://drive.usercontent.google.com/download?id={id}&export
 
 CHUNKSIZE = 10**4
 
+REMOTE_PROTOCOLS = ['https://', 'http://', 'ftp://']
+REMOTE_REGEX = f"^({'|'.join(REMOTE_PROTOCOLS)})"
 
 # cache config
 cache_dir = os.path.join(
@@ -45,6 +54,7 @@ cache_dir = os.path.join(
     'bio-inter-graph'
 )
 requests_cache_dir = os.path.join(cache_dir, 'requests')
+fsspec_cache_dir = os.path.join(cache_dir, 'fsspec')
 os.makedirs(requests_cache_dir, exist_ok=True)
 memory = Memory(cache_dir, verbose=0)
 
@@ -156,3 +166,61 @@ def _df_hash(df: pd.DataFrame) -> str:
     result = pd.util.hash_pandas_object(df).values
     result = hashlib.sha1(result).hexdigest()
     return result
+
+
+def _canonicalize_url(url: str) -> str:
+    parts = urlsplit(url)
+
+    pairs = parse_qsl(
+        parts.query,
+        keep_blank_values=False,
+        strict_parsing=True,
+        encoding="utf-8",
+        errors="strict",
+    )
+
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(sorted(pairs), doseq=True), parts.fragment))
+
+
+def remote_file2local(url: str, *, cache_dir: str = fsspec_cache_dir, **remote_opts) -> str:
+    parts = url.split('::')
+    assert sum(1 for part in parts if re.match(REMOTE_REGEX, part)) == 1
+    assert re.match(REMOTE_REGEX, parts[-1])
+
+    remote_fs, remote_path = fsspec.core.url_to_fs(_canonicalize_url(parts[-1]), **remote_opts)
+
+    sc = fsspec.filesystem(
+        "simplecache",
+        fs=remote_fs,
+        cache_storage=cache_dir,
+    )
+
+    cache_dir = sc.storage[-1]
+    local_path = os.path.join(cache_dir, sc._mapper(remote_path))
+
+    if not os.path.exists(local_path):
+        os.makedirs(cache_dir, exist_ok=True)
+        cb = TqdmCallback(tqdm_cls=tqdm, tqdm_kwargs=dict(unit="B", unit_scale=True, unit_divisor=1024))
+        start = time()
+        remote_fs.get_file(remote_path, local_path, callback=cb)
+        download_time = time() - start
+
+        metadata_path = local_path + '.meta.json'
+        with open(metadata_path, 'wt') as metadata_file:
+            json.dump(
+                {
+                    'url': parts[-1],
+                    'canonical_url': remote_path,
+                    'ts': start + download_time,
+                    'download_time': download_time,
+                    'local_path': local_path
+                },
+                metadata_file,
+                indent=2,
+                sort_keys=True
+            )
+
+    parts[-1] = f'file://{local_path}'
+
+    new_url = '::'.join(parts)
+    return new_url
