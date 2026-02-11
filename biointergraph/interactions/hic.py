@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from ..shared import _read_tsv, GOOGLE_DRIVE_URL
@@ -24,12 +25,14 @@ def load_hic_data() -> pd.DataFrame:
             GOOGLE_DRIVE_URL.format(id=INTER_DATA_ID),
             usecols=['chr1', 'fragmentMid1', 'chr2', 'fragmentMid2', 'q-value'],
             compression='gzip',
-            dtype=None
+            dtype=None,
+            use_cache=True
         ),
         _read_tsv(
             GOOGLE_DRIVE_URL.format(id=INTRA_DATA_ID),
             compression='gzip',
-            dtype=None
+            dtype=None,
+            use_cache=True
         )
     ])
 
@@ -61,7 +64,9 @@ def load_hic_data() -> pd.DataFrame:
     ])
     result = result[result['yalid1'] < result['yalid2']]
 
-    result = result.groupby(['yalid1', 'yalid2'], as_index=False, observed=True)['q-value'].min()
+    result['weight'] = -np.log10(result['q-value'])
+
+    result = result.groupby(['yalid1', 'yalid2'], as_index=False, observed=True)['weight'].max()
 
     assert result.notna().all().all()
 
