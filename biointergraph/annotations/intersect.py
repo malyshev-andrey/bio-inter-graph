@@ -69,6 +69,8 @@ def bed_intersect(
             - `start2`, `end2`, `name2`, `score2`, `strand2`: Columns from the second input DataFrame.
     """
 
+    bed1, bed2 = bed1.copy(), bed2.copy()
+
     if unify_chr_assembly is not None:
         bed1['chr'] = unify_chr(bed1['chr'], assembly=unify_chr_assembly)
         bed2['chr'] = unify_chr(bed2['chr'], assembly=unify_chr_assembly)
