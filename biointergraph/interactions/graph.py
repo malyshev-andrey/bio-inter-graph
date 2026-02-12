@@ -105,6 +105,16 @@ def _get_github_release_file(owner, repo, filename) -> str:
     return match["browser_download_url"] if match else ""
 
 
+def _dump_edges(graph: nx.Graph, path: str):
+    nx.to_pandas_edgelist(graph).to_csv(
+        path,
+        sep='\t',
+        index=False,
+        columns=['source', 'target', 'dataset', 'weight'],
+        compression={'method': 'gzip', 'compresslevel': 9}
+    )
+
+
 def build_main_graph(max_workers: int = 2, rebuild: bool = False) -> nx.Graph:
     if not rebuild:
         print('[INFO] GRAPH BUILD: reading cache ...')
@@ -180,19 +190,14 @@ def build_main_graph(max_workers: int = 2, rebuild: bool = False) -> nx.Graph:
         weight=('weight', 'max')
     )
 
-    print('[INFO] GRAPH BUILD: writing cache ...')
-    data.to_csv(
-        os.path.join(cache_dir, "edges.tsv.gz"),
-        sep='\t',
-        index=False,
-        compression={'method': 'gzip', 'compresslevel': 9}
-    )
-
     print('[INFO] GRAPH BUILD: building graph ...')
     graph = nx.from_pandas_edgelist(data, edge_attr=['dataset', 'weight'])
 
     print('[INFO] GRAPH BUILD: removing minor components ...')
     graph = _remove_minor_components(graph)
+
+    print('[INFO] GRAPH BUILD: writing cache ...')
+    _dump_edges(graph, os.path.join(cache_dir, "edges.tsv.gz"))
 
     return graph
 
