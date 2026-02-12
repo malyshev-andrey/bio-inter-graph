@@ -26,7 +26,7 @@ from .protein import load_intact_interactions, load_biogrid_interactions, load_s
 from .rna_chrom import load_redc_redchip_data
 from .gtrd import load_gtrd_chip_seq_data
 from .prim_seq import load_prim_seq_data
-from ..shared import memory, cache_dir, datasets_cache_dir
+from ..shared import memory, cache_dir, datasets_cache_dir, remote_file2local
 from ..annotations import yalid2state
 from ..ids_mapping import id2yagid, yagid2ids, yapid2ids, yapid2best_id
 from ..ids_info import yagid2biotype, yapid2is_nuclear
@@ -93,14 +93,33 @@ def _remove_minor_components(graph: nx.Graph) -> nx.Graph:
     return graph
 
 
+def _get_github_release_file(owner, repo, filename) -> str:
+    r = requests.get(
+        f"https://api.github.com/repos/{owner}/{repo}/releases/latest",
+        headers={"Accept": "application/vnd.github+json"}
+    )
+    r.raise_for_status()
+    data = r.json()
+
+    match = next((a for a in data.get("assets", []) if a["name"] == filename), None)
+    return match["browser_download_url"] if match else "")
+
+
 def build_main_graph(max_workers: int = 2, rebuild: bool = False) -> nx.Graph:
-    # if not rebuild:
-    #     with (files('biointergraph.static') / "edges.tsv.gz").open('rb') as file:
-    #         result = pd.read_csv(file, compression='gzip', sep='\t', dtype='str')
+    if not rebuild:
+        print('[INFO] GRAPH BUILD: reading cache ...')
+        latest_url = _get_github_release_file("malyshev-andrey", "bio-inter-graph", "edges.tsv.gz")
 
-    #     result = nx.from_pandas_edgelist(result, edge_attr='dataset')
+        result = pd.read_csv(remote_file2local(latest_url), compression='gzip', sep='\t', dtype='str')
+        result['weight'] = result['weight'].asytype('float')
 
-    #     return result
+        print('[INFO] GRAPH BUILD: building graph ...')
+        graph = nx.from_pandas_edgelist(result, edge_attr=['dataset', 'weight'])
+
+        print('[INFO] GRAPH BUILD: removing minor components ...')
+        graph = _remove_minor_components(graph)
+
+        return graph
 
     data = [
         ('KARR-seq', load_karr_seq_data, dict(cell_line='K562', pvalue=0.05)),
