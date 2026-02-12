@@ -102,13 +102,14 @@ def _get_github_release_file(owner, repo, filename) -> str:
     data = r.json()
 
     match = next((a for a in data.get("assets", []) if a["name"] == filename), None)
-    return match["browser_download_url"] if match else "")
+    return match["browser_download_url"] if match else ""
 
 
 def build_main_graph(max_workers: int = 2, rebuild: bool = False) -> nx.Graph:
     if not rebuild:
         print('[INFO] GRAPH BUILD: reading cache ...')
         latest_url = _get_github_release_file("malyshev-andrey", "bio-inter-graph", "edges.tsv.gz")
+        assert latest_url
 
         result = pd.read_csv(remote_file2local(latest_url), compression='gzip', sep='\t', dtype='str')
         result['weight'] = result['weight'].asytype('float')
