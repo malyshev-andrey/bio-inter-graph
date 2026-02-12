@@ -127,8 +127,7 @@ def build_main_graph(max_workers: int = 2, rebuild: bool = False) -> nx.Graph:
         print('[INFO] GRAPH BUILD: building graph ...')
         graph = nx.from_pandas_edgelist(result, edge_attr=['dataset', 'weight'])
 
-        print('[INFO] GRAPH BUILD: removing minor components ...')
-        graph = _remove_minor_components(graph)
+        assert nx.number_connected_components(graph) == 1
 
         return graph
 
