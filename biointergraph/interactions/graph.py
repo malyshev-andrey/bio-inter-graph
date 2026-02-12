@@ -18,6 +18,7 @@ from .encode import (
     load_encode_iclip_data,
     load_encode_chip_seq_data
 )
+from .hic import load_hic_data
 from .rna_protein import load_postar3_data, load_frip_seq_data
 from .karr_seq import load_karr_seq_data
 from .ric_seq import load_ric_seq_data
@@ -115,8 +116,11 @@ def build_main_graph(max_workers: int = 2, rebuild: bool = False) -> nx.Graph:
         ('ENCODE ChIP-seq', load_encode_chip_seq_data, dict(assembly='hg38', cell_line='K562')),
         ('Red-C & RedChIP', load_redc_redchip_data, dict()),
         ('GTRD', load_gtrd_chip_seq_data, dict(cell_line='K562')),
-        ('PRIM-seq', load_prim_seq_data, dict())
+        ('PRIM-seq', load_prim_seq_data, dict()),
+        ('Hi-C', load_hic_data, dict())
     ]
+
+    print('[INFO] GRAPH BUILD: collecting datasets ...')
 
     tqdm_kwargs = dict(total=len(data), unit='dataset', desc='Collecting data: ')
     if max_workers > 1:
@@ -139,6 +143,8 @@ def build_main_graph(max_workers: int = 2, rebuild: bool = False) -> nx.Graph:
         data = [_wrapper(dataset, func, **kwargs) for dataset, func, kwargs in tqdm(data, **tqdm_kwargs)]
 
     data = pd.concat(data)
+
+    print('[INFO] GRAPH BUILD: validating data ...')
     assert not data.duplicated(['dataset', 'source', 'target']).any()
 
     assert data.shape[1] == 4
@@ -148,15 +154,24 @@ def build_main_graph(max_workers: int = 2, rebuild: bool = False) -> nx.Graph:
 
     assert not data['dataset'].str.contains(',').any()
 
+    print('[INFO] GRAPH BUILD: deduplication ...')
     data = data.groupby(['source', 'target'], as_index=False, observed=True).agg(
         dataset=('dataset', ','.join),
         weight=('weight', 'max')
     )
 
-    data.to_parquet(os.path.join(cache_dir, "graph_edges.parquet"), index=False)
+    print('[INFO] GRAPH BUILD: writing cache ...')
+    data.to_csv(
+        os.path.join(cache_dir, "edges.tsv.gz"),
+        sep='\t',
+        index=False,
+        compression={'method': 'gzip', 'compresslevel': 9}
+    )
 
+    print('[INFO] GRAPH BUILD: building graph ...')
     graph = nx.from_pandas_edgelist(data, edge_attr=['dataset', 'weight'])
 
+    print('[INFO] GRAPH BUILD: removing minor components ...')
     graph = _remove_minor_components(graph)
 
     return graph

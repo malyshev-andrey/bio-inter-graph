@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from ..shared import _read_tsv, GOOGLE_DRIVE_URL
+from ..shared import _read_tsv, GOOGLE_DRIVE_URL, memory
 from ..annotations import load_chromhmm_annotation, best_left_intersect
 
 INTER_DATA_ID = '1nQ4c3nkcFCzr-rlnfxvItk5b_vStk4tq'
@@ -19,6 +19,7 @@ def _get_bin2yalid_map(bins: pd.DataFrame) -> pd.DataFrame:
     return result[['chr', 'mid', 'name']]
 
 
+@memory.cache
 def load_hic_data() -> pd.DataFrame:
     result = pd.concat([
         _read_tsv(
