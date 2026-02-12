@@ -1,3 +1,5 @@
+import os
+import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from time import sleep
 from importlib.resources import files
@@ -23,7 +25,7 @@ from .protein import load_intact_interactions, load_biogrid_interactions, load_s
 from .rna_chrom import load_redc_redchip_data
 from .gtrd import load_gtrd_chip_seq_data
 from .prim_seq import load_prim_seq_data
-from ..shared import memory
+from ..shared import memory, cache_dir, datasets_cache_dir
 from ..annotations import yalid2state
 from ..ids_mapping import id2yagid, yagid2ids, yapid2ids, yapid2best_id
 from ..ids_info import yagid2biotype, yapid2is_nuclear
@@ -32,19 +34,39 @@ from ..ids_info import yagid2biotype, yapid2is_nuclear
 def _wrapper(dataset: str, func: Callable, **kwargs) -> pd.DataFrame:
     result = func(**kwargs)
     result = result.reset_index(drop=True)
-    assert result.shape[1] == 2
-    result.columns = 'source', 'target'
+    assert result.shape[1] == 3
+    assert 'weight' in result.columns
+    result = result.rename(
+        columns=dict(zip(
+            [c for c in result.columns if c != 'weight'],
+            ['source', 'target']
+        ))
+    )
     assert (result['source'] != result['target']).all()
 
     n_pairs = result.shape[0]
     swap_mask = result['source'] > result['target']
-    result.loc[swap_mask, ['source', 'target']
-               ] = result.loc[swap_mask, ['target', 'source']].values
+    result.loc[swap_mask, ['source', 'target']] = result.loc[swap_mask, ['target', 'source']].values
     assert (result['source'] < result['target']).all()
-    assert not result.duplicated().any()
+    assert not result.duplicated(['source', 'target']).any()
 
     result['dataset'] = dataset
     assert result.shape[0] == n_pairs
+
+    dataset_path = [re.sub(r'\W', '_', dataset)]
+    for key in sorted(kwargs):
+        dataset_path.append(re.sub(r'\W', '_', kwargs[key]))
+    dataset_path = os.path.join(datasets_cache_dir, '-'.join(dataset_path) + '.tsv.gz')
+
+    result.to_csv(
+        dataset_path,
+        sep='\t',
+        columns=['source', 'target', 'weight'],
+        index=False,
+        compression={'method': 'gzip', 'compressionlevel': 9}
+    )
+
+    result['weight'] = result['weight'].rank() / (result['weight'].size + 1)
 
     return result
 
@@ -70,68 +92,67 @@ def _remove_minor_components(graph: nx.Graph) -> nx.Graph:
     return graph
 
 
-@memory.cache
 def build_main_graph(max_workers: int = 2, rebuild: bool = False) -> nx.Graph:
-    if not rebuild:
-        with (files('biointergraph.static') / "edges.tsv.gz").open('rb') as file:
-            result = pd.read_csv(file, compression='gzip',
-                                 sep='\t', dtype='str')
+    # if not rebuild:
+    #     with (files('biointergraph.static') / "edges.tsv.gz").open('rb') as file:
+    #         result = pd.read_csv(file, compression='gzip', sep='\t', dtype='str')
 
-        result = nx.from_pandas_edgelist(result, edge_attr='dataset')
+    #     result = nx.from_pandas_edgelist(result, edge_attr='dataset')
 
-        return result
+    #     return result
 
     data = [
         ('KARR-seq', load_karr_seq_data, dict(cell_line='K562', pvalue=0.05)),
-        ('ENCODE eCLIP', load_encode_eclip_data, dict(
-            assembly='hg38', annotation='gencode', cell_line='K562')),
-        ('ENCODE RIP', load_encode_rip_data, dict(
-            annotation='gencode', cell_line='K562')),
-        ('ENCODE iCLIP', load_encode_iclip_data, dict(
-            annotation='gencode', cell_line='K562')),
-        ('POSTAR3', load_postar3_data, dict(
-            species='human', cell_line='K562', annotation='gencode')),
+        ('ENCODE eCLIP', load_encode_eclip_data, dict(assembly='hg38', annotation='gencode', cell_line='K562')),
+        ('ENCODE RIP', load_encode_rip_data, dict(annotation='gencode', cell_line='K562')),
+        ('ENCODE iCLIP', load_encode_iclip_data, dict(annotation='gencode', cell_line='K562')),
+        ('POSTAR3', load_postar3_data, dict(species='human', cell_line='K562', annotation='gencode')),
         ('fRIP-seq', load_frip_seq_data, dict()),
         ('RIC-seq', load_ric_seq_data, dict(pvalue=0.05)),
         ('IntAct', load_intact_interactions, dict()),
         ('BioGRID', load_biogrid_interactions, dict()),
         ('STRING', load_string_interactions, dict(min_score=700)),
-        ('ENCODE ChIP-seq', load_encode_chip_seq_data,
-         dict(assembly='hg38', cell_line='K562')),
+        ('ENCODE ChIP-seq', load_encode_chip_seq_data, dict(assembly='hg38', cell_line='K562')),
         ('Red-C & RedChIP', load_redc_redchip_data, dict()),
         ('GTRD', load_gtrd_chip_seq_data, dict(cell_line='K562')),
         ('PRIM-seq', load_prim_seq_data, dict())
     ]
 
-    tqdm_kwargs = dict(total=len(data), unit='dataset',
-                       desc='Collecting data: ')
+    tqdm_kwargs = dict(total=len(data), unit='dataset', desc='Collecting data: ')
     if max_workers > 1:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = []
-            for dataset, func, kwargs in data:
-                futures.append(executor.submit(
-                    _wrapper, dataset, func, **kwargs))
-                sleep(1)
+            with tqdm(**tqdm_kwargs) as progress_bar:
+                futures = []
+                for dataset, func, kwargs in data:
+                    futures.append(executor.submit(_wrapper, dataset, func, **kwargs))
+                    sleep(1)
 
-            data = [f.result()
-                    for f in tqdm(as_completed(futures), **tqdm_kwargs)]
+                data = []
+                for future in as_completed(futures):
+                    data.append(future.result())
+                    progress_bar.update(1)
 
     else:
-        data = [_wrapper(dataset, func, **kwargs)
-                for dataset, func, kwargs in tqdm(data, **tqdm_kwargs)]
+        data = [_wrapper(dataset, func, **kwargs) for dataset, func, kwargs in tqdm(data, **tqdm_kwargs)]
 
     data = pd.concat(data)
-    assert not data.duplicated().any()
+    assert not data.duplicated(['dataset', 'source', 'target']).any()
 
-    assert data.shape[1] == 3
+    assert data.shape[1] == 4
     regex = r'^YA[LPG]ID\d{7}$'
     assert data['source'].str.match(regex).all()
     assert data['target'].str.match(regex).all()
 
-    data = data.groupby(['source', 'target'], as_index=False, observed=True)[
-        'dataset'].agg(','.join)
+    assert not data['dataset'].str.contains(',').any()
 
-    graph = nx.from_pandas_edgelist(data, edge_attr='dataset')
+    data = data.groupby(['source', 'target'], as_index=False, observed=True).agg(
+        dataset=('dataset', ','.join),
+        weight=('weight', 'max')
+    )
+
+    data.to_parquet(os.path.join(cache_dir, "graph_edges.parquet"), index=False)
+
+    graph = nx.from_pandas_edgelist(data, edge_attr=['dataset', 'weight'])
 
     graph = _remove_minor_components(graph)
 

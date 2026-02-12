@@ -51,6 +51,9 @@ cache_dir = os.path.join(
     os.getenv('XDG_CACHE_HOME', os.path.expanduser('~/.cache')),
     'bio-inter-graph'
 )
+datasets_cache_dir = os.path.join(cache_dir, 'datasets')
+if not os.path.exists(datasets_cache_dir):
+    os.makedirs(cache_dir, exist_ok=True)
 fsspec_cache_dir = os.path.join(cache_dir, 'fsspec')
 memory = Memory(cache_dir, verbose=0)
 
