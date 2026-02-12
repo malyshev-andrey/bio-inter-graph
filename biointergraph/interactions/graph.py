@@ -323,29 +323,48 @@ def _lighten_graph(graph: nx.Graph, *, inplace: bool = False) -> nx.Graph:
     if not inplace:
         graph = graph.copy()
 
-    nodes = describe_nodes(graph, neighbors_types=False)
+    print('[INFO] LIGHTEN GRAPH: describing nodes ...')
+    nodes = describe_nodes(graph)
     nodes_to_remove = (
         (nodes['degree'].eq(1) & nodes['type'].eq('DNA'))
-        | nodes['subtype'].eq('mRNA')
+        | nodes['subtype'].eq('mRNA') |
+        (nodes['RNA'].eq(0) & nodes['protein'].eq(0))
     )
     nodes_to_remove = nodes.loc[nodes_to_remove, 'node']
+
+    print('[INFO] LIGHTEN GRAPH: removing nodes ...')
     graph.remove_nodes_from(nodes_to_remove)
     return graph
 
 
 def build_light_graph(max_workers: int = 2, rebuild: bool = False) -> nx.Graph:
     if not rebuild:
-        with (files('biointergraph.static') / "edges_light.tsv.gz").open('rb') as file:
-            result = pd.read_csv(file, compression='gzip',
-                                 sep='\t', dtype='str')
+        print('[INFO] LIGHT GRAPH BUILD: reading cache ...')
+        latest_url = _get_github_release_file("malyshev-andrey", "bio-inter-graph", "edges_light.tsv.gz")
+        assert latest_url
 
-        result = nx.from_pandas_edgelist(result, edge_attr='dataset')
+        result = pd.read_csv(remote_file2local(latest_url), compression='gzip', sep='\t', dtype='str')
+        result['weight'] = result['weight'].astype('float')
 
-        return result
+        print('[INFO] LIGHT GRAPH BUILD: building graph ...')
+        graph = nx.from_pandas_edgelist(result, edge_attr=['dataset', 'weight'])
 
+        assert nx.number_connected_components(graph) == 1
+
+        return graph
+
+    print('[INFO] LIGHT GRAPH BUILD: building main graph ...')
     graph = build_main_graph(max_workers=max_workers)
+
+    print('[INFO] LIGHT GRAPH BUILD: lightening graph ...')
     _lighten_graph(graph, inplace=True)
+
+    print('[INFO] LIGHT GRAPH BUILD: removing minor components ...')
     graph = _remove_minor_components(graph)
+
+    print('[INFO] LIGHT GRAPH BUILD: writing cache ...')
+    _dump_edges(graph, os.path.join(cache_dir, "edges_light.tsv.gz"))
+
     return graph
 
 
