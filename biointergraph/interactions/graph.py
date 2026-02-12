@@ -333,7 +333,6 @@ def _lighten_graph(graph: nx.Graph, *, inplace: bool = False) -> nx.Graph:
     return graph
 
 
-@memory.cache
 def build_light_graph(max_workers: int = 2, rebuild: bool = False) -> nx.Graph:
     if not rebuild:
         with (files('biointergraph.static') / "edges_light.tsv.gz").open('rb') as file:
