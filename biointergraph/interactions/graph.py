@@ -55,7 +55,7 @@ def _wrapper(dataset: str, func: Callable, **kwargs) -> pd.DataFrame:
 
     dataset_path = [re.sub(r'\W', '_', dataset)]
     for key in sorted(kwargs):
-        dataset_path.append(re.sub(r'\W', '_', kwargs[key]))
+        dataset_path.append(re.sub(r'\W', '_', str(kwargs[key])))
     dataset_path = os.path.join(datasets_cache_dir, '-'.join(dataset_path) + '.tsv.gz')
 
     result.to_csv(
@@ -129,7 +129,10 @@ def build_main_graph(max_workers: int = 2, rebuild: bool = False) -> nx.Graph:
 
                 data = []
                 for future in as_completed(futures):
-                    data.append(future.result())
+                    try:
+                        data.append(future.result())
+                    except Exception:
+                        raise
                     progress_bar.update(1)
 
     else:
