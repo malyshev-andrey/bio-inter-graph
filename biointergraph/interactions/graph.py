@@ -63,7 +63,7 @@ def _wrapper(dataset: str, func: Callable, **kwargs) -> pd.DataFrame:
         sep='\t',
         columns=['source', 'target', 'weight'],
         index=False,
-        compression={'method': 'gzip', 'compressionlevel': 9}
+        compression={'method': 'gzip', 'compresslevel': 9}
     )
 
     result['weight'] = result['weight'].rank() / (result['weight'].size + 1)
