@@ -112,7 +112,7 @@ def build_main_graph(max_workers: int = 2, rebuild: bool = False) -> nx.Graph:
         assert latest_url
 
         result = pd.read_csv(remote_file2local(latest_url), compression='gzip', sep='\t', dtype='str')
-        result['weight'] = result['weight'].asytype('float')
+        result['weight'] = result['weight'].astype('float')
 
         print('[INFO] GRAPH BUILD: building graph ...')
         graph = nx.from_pandas_edgelist(result, edge_attr=['dataset', 'weight'])
