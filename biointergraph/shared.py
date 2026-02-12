@@ -53,7 +53,7 @@ cache_dir = os.path.join(
 )
 datasets_cache_dir = os.path.join(cache_dir, 'datasets')
 if not os.path.exists(datasets_cache_dir):
-    os.makedirs(cache_dir, exist_ok=True)
+    os.makedirs(datasets_cache_dir, exist_ok=True)
 fsspec_cache_dir = os.path.join(cache_dir, 'fsspec')
 memory = Memory(cache_dir, verbose=0)
 
