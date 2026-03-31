@@ -3,7 +3,7 @@
 ## Quick start
 Install package using pip:
 ```{bash}
-pip install -U git+https://github.com/malyshev-andrey/bio-inter-graph.git
+pip3 install -U git+https://github.com/malyshev-andrey/bio-inter-graph.git
 ```
 
 Check installation:
