@@ -22,6 +22,7 @@ from .graph import (
     graph2random_walks, indirect_interactions
 )
 from .rna_chrom import load_redc_redchip_data
+from .sprite import load_rdsprite_data
 from .rna_protein import load_postar3_data, load_frip_seq_data
 from .gtrd import load_gtrd_chip_seq_data
 from .analysis import (
@@ -47,6 +48,7 @@ __all__ = [
     'describe_nodes', 'id2subgraph', 'build_light_graph', 'describe_edges',
     'node2neighbors', 'graph2random_walks', 'indirect_interactions',
     'load_redc_redchip_data',
+    'load_rdsprite_data',
     'load_postar3_data', 'load_frip_seq_data',
     'load_gtrd_chip_seq_data',
     'graph2rna_protein', 'graph_datasets_stats',
