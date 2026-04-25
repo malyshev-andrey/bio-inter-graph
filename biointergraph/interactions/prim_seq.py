@@ -71,7 +71,9 @@ def load_prim_seq_data():
         result['yagid'].str.startswith('YAGID')
     ]
 
-    result['weight'] = -np.log10(result['BH-corrected p-value'].astype('float'))
+    pval = result['BH-corrected p-value'].astype('float')
+    pval = pval.clip(lower=pval[pval > 0].min())
+    result['weight'] = -np.log10(pval)
 
     result = result.groupby(['yagid', 'yapid'], observed=True, as_index=False)['weight'].max()
 
