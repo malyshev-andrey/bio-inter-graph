@@ -89,7 +89,9 @@ def graph_datasets_stats(graph: nx.Graph, *, latex: Literal['en', 'ru']|None = N
         'STRING':          ['STRING',     'Database',                'Human',     '-',                 '-'       ],
         'fRIP-seq':        ['GSE67963',   'fRIP-seq',                'K562',      'GENCODE',           'hg19'    ],
         'ENCODE RIP':      ['ENCODE',     'RIP-seq & RIP-chip',      'K562',      'GENCODE',           'hg19'    ],
-        'ENCODE iCLIP':    ['ENCODE',     'iCLIP',                   'K562',      'GENCODE',           'hg19'    ]
+        'ENCODE iCLIP':    ['ENCODE',     'iCLIP',                   'K562',      'GENCODE',           'hg19'    ],
+        'PRIM-seq':        ['GSE270010',  'PRIM-seq',                'K562',      'RefSeq',            'hg38'    ],
+        'Hi-C':            ['4DN',        'Hi-C',                    'K562',      'ChromHMM',          'hg38'    ]
     }
     metadata = pd.DataFrame(metadata, index=index).T
 
