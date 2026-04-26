@@ -10,6 +10,7 @@ from .refseq import refseq_transcript_id_info, refseq_transcript_id2biotype
 from .extended import extended_gene_id2biotype
 from .main import yagid2biotype
 from .uniprot import uniprot_id_info, yapid2is_nuclear
+from .mobidb import mobidb_disorder_info, yapid2is_disordered
 
 __all__ = [
     'fetch_ensembl_table', 'ensembl_transcript_id_info', 'ensembl_gene_id_info',
@@ -18,5 +19,6 @@ __all__ = [
     'refseq_transcript_id_info', 'refseq_transcript_id2biotype',
     'extended_gene_id2biotype',
     'yagid2biotype',
-    'uniprot_id_info', 'yapid2is_nuclear'
+    'uniprot_id_info', 'yapid2is_nuclear',
+    'mobidb_disorder_info', 'yapid2is_disordered'
 ]

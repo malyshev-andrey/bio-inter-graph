@@ -9,7 +9,6 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 from ..shared import memory, GFF_COLUMNS
-from ..interactions.karr_seq_shared import _retrieve_karr_seq_metadata, _load_single_karr_seq
 from ..ids import drop_id_version
 
 
@@ -66,6 +65,8 @@ def refseq_transcript_id2entrez_gene_id(ids: pd.Series, chunksize: int = 10000) 
 
 @memory.cache
 def karr_seq_ids2entrezgene_id():
+    from ..interactions.karr_seq_shared import _retrieve_karr_seq_metadata, _load_single_karr_seq
+
     ids = set()
 
     with ThreadPoolExecutor(max_workers=20) as executor:
