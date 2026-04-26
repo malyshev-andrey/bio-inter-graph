@@ -11,6 +11,11 @@ from .extended import extended_gene_id2biotype
 from .main import yagid2biotype
 from .uniprot import uniprot_id_info, yapid2is_nuclear
 from .mobidb import mobidb_disorder_info, yapid2is_disordered
+from .localization import (
+    encode_rna_localization,
+    apex_seq_rna_localization,
+    yagid2rna_localization
+)
 
 __all__ = [
     'fetch_ensembl_table', 'ensembl_transcript_id_info', 'ensembl_gene_id_info',
@@ -20,5 +25,6 @@ __all__ = [
     'extended_gene_id2biotype',
     'yagid2biotype',
     'uniprot_id_info', 'yapid2is_nuclear',
-    'mobidb_disorder_info', 'yapid2is_disordered'
+    'mobidb_disorder_info', 'yapid2is_disordered',
+    'encode_rna_localization', 'apex_seq_rna_localization', 'yagid2rna_localization'
 ]
