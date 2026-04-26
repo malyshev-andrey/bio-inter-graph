@@ -29,8 +29,8 @@ APEX_FDR_THRESHOLD = 0.05
 
 def _load_encode_rsem(url: str) -> pd.Series:
     data = _read_tsv(url, use_cache=True, chunksize=None)
-    data = data[data['gene_id'].str.startswith('ENSG')]
-    data['gene_id'] = drop_id_version(data['gene_id'])
+    is_ensg = data['gene_id'].str.startswith('ENSG')
+    data.loc[is_ensg, 'gene_id'] = drop_id_version(data.loc[is_ensg, 'gene_id'])
     data['FPKM'] = data['FPKM'].astype(float)
     result = data.groupby('gene_id')['FPKM'].max()
     return result
@@ -102,14 +102,13 @@ def yagid2rna_localization(source: str = 'encode') -> pd.Series:
         raise ValueError(f"source must be 'encode' or 'apex', got '{source}'")
 
     mapping = id2yagid()
-    ensg_ids = mapping[mapping.index.str.startswith('ENSG')]
-    ensg2yagid = ensg_ids
 
     loc_dict = localization.to_dict()
+    ids_with_loc = mapping.index.isin(loc_dict)
 
     result = pd.DataFrame({
-        'yagid': ensg2yagid.values,
-        'loc': [loc_dict.get(ensg) for ensg in ensg2yagid.index],
+        'yagid': mapping[ids_with_loc].values,
+        'loc': [loc_dict[gid] for gid in mapping.index[ids_with_loc]],
     })
     result = result.dropna(subset=['loc'])
 
