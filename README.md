@@ -28,3 +28,4 @@ print(biointergraph.__version__)
 - [fsspec](https://github.com/fsspec/filesystem_spec) (>=2026.2.0)
 - [aiohttp](https://github.com/aio-libs/aiohttp) (>=3.13.3)
 - [Jinja2](https://github.com/pallets/jinja) (>= 3.0.0)
+
